@@ -1,7 +1,7 @@
 {
-  "name": "NoFlo",
+  "name": "NoFlo Development Environment",
   "description": "Flow-Based Programming Environment",
-  "version": "0.1",
+  "version": "0.1.0",
   "app": {
     "background": {
       "scripts": ["app/background.js"]
@@ -13,11 +13,13 @@
     ]
   },
   "permissions": [
-    "https://the-grid-account.herokuapp.com/",
-    "https://noflo-gate.herokuapp.com/",
+    "https://passport.thegrid.io/",
     "https://api.github.com/",
+    "https://api.flowhub.io/",
+    "https://secure.gravatar.com/",
     "storage",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "identity"
   ],
   "icons": {
     "16": "app/noflo-16.png",
