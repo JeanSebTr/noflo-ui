@@ -37583,7 +37583,7 @@ function klayinit () {
 
   Array.prototype.clean = function() {
     for (var i = 0; i < this.length; i++) {
-      if (this[i] === null) {         
+      if (this[i] === null || this[i] === undefined) {
         this.splice(i, 1);
         i--;
       }
@@ -37596,16 +37596,20 @@ function klayinit () {
     // Default direction is left to right
     direction = direction || 'RIGHT';
     // Default port and node properties
-    var portProperties = {inportSide: {'de.cau.cs.kieler.portSide': 'WEST'},
-                          outportSide: {'de.cau.cs.kieler.portSide': 'EAST'},
-                          width: 10,
-                          height: 10};
+    var portProperties = {
+      inportSide: {'de.cau.cs.kieler.portSide': 'WEST'},
+      outportSide: {'de.cau.cs.kieler.portSide': 'EAST'},
+      width: 10,
+      height: 10
+    };
     if (direction === 'DOWN') {
       portProperties.inportSide = {'de.cau.cs.kieler.portSide': 'NORTH'};
       portProperties.outportSide = {'de.cau.cs.kieler.portSide': 'SOUTH'};
     }
-    var nodeProperties = {width: 72,
-                          height: 108};
+    var nodeProperties = {
+      width: 72,
+      height: 108
+    };
     // Start KGraph building
     var kGraph = {
       id: graph.name,
@@ -37621,18 +37625,22 @@ function klayinit () {
       var inPorts = portInfo[node.id].inports;
       var inPortsKeys = Object.keys(inPorts);
       var inPortsTemp = inPortsKeys.map(function (key) {
-        return {id: node.id + '_' + key,
-                width: portProperties.width,
-                height: portProperties.height,
-                properties: portProperties.inportSide};
+        return {
+          id: node.id + '_' + key,
+          width: portProperties.width,
+          height: portProperties.height,
+          properties: portProperties.inportSide
+        };
       });
       var outPorts = portInfo[node.id].outports;
       var outPortsKeys = Object.keys(outPorts);
       var outPortsTemp = outPortsKeys.map(function (key) {
-        return {id: node.id + '_' + key,
-                width: portProperties.width,
-                height: portProperties.height,
-                properties: portProperties.outportSide};
+        return {
+          id: node.id + '_' + key,
+          width: portProperties.width,
+          height: portProperties.height,
+          properties: portProperties.outportSide
+        };
       });
       var kChild = {
         id: node.id,
@@ -37652,17 +37660,20 @@ function klayinit () {
       var inport = inports[key];
       var tempId = "inport:::"+key;
       // Inports just has only one output port
-      var uniquePort = {id: inport.port,
-                        width: portProperties.width,
-                        height: portProperties.height,
-                        properties: portProperties.outportSide};
+      var uniquePort = {
+        id: inport.port,
+        width: portProperties.width,
+        height: portProperties.height,
+        properties: portProperties.outportSide
+      };
       
       var kChild = {
         id: tempId, 
         labels: [{text: key}],
         width: nodeProperties.width, 
         height: nodeProperties.height,
-        ports: [uniquePort]
+        ports: [uniquePort],
+        properties: {"de.cau.cs.kieler.klay.layered.layerConstraint": "FIRST_SEPARATE"}
       };
       idx[tempId] = countIdx++;
       return kChild;
@@ -37673,17 +37684,20 @@ function klayinit () {
       var outport = outports[key];
       var tempId = "outport:::"+key;
       // Outports just has only one input port
-      var uniquePort = {id: outport.port,
-                        width: portProperties.width,
-                        height: portProperties.height,
-                        properties: portProperties.inportSide};
+      var uniquePort = {
+        id: outport.port,
+        width: portProperties.width,
+        height: portProperties.height,
+        properties: portProperties.inportSide
+      };
 
       var kChild = {
         id: tempId, 
         labels: [{text: key}],
         width: nodeProperties.width, 
         height: nodeProperties.height,
-        ports: [uniquePort]
+        ports: [uniquePort],
+        properties: {"de.cau.cs.kieler.klay.layered.layerConstraint": "LAST_SEPARATE"}
       };
       idx[tempId] = countIdx++;
       return kChild;
@@ -37703,12 +37717,13 @@ function klayinit () {
       var sourcePort = edge.from.port;
       var target = edge.to.node;
       var targetPort = edge.to.port;
-      kGraph.edges.push({id: 'e' + currentEdge++, 
-                         source: source,
-                         sourcePort: source + '_' + sourcePort,
-                         target: target,
-                         targetPort: target + '_' + targetPort
-                        });
+      kGraph.edges.push({
+        id: 'e' + currentEdge++, 
+        source: source,
+        sourcePort: source + '_' + sourcePort,
+        target: target,
+        targetPort: target + '_' + targetPort
+      });
     });
     
     // Graph i/o to kGraph edges
@@ -37753,9 +37768,11 @@ function klayinit () {
     var nodesInGroups = [];
     groups.map(function (group) {
       // Create a node to use as a subgraph
-      var node = {id: 'group' + countGroups++, 
-                  children: [], 
-                  edges: []};
+      var node = {
+        id: 'group' + countGroups++, 
+        children: [], 
+        edges: []
+      };
       // Build the node/subgraph
       group.nodes.map(function (n) {
         var nodeT = kGraph.children[idx[n]];
@@ -37806,26 +37823,33 @@ function klayinit () {
     direction = direction || "RIGHT";
 
     // Define some preset options to KLayJS
-    var options = {"algorithm": "de.cau.cs.kieler.klay.layered",
-                   "layoutHierarchy": true,
-                   "spacing": 20,
-                   "portConstraints": "FIXED_SIDE",
-                   "nodePlace": "BRANDES_KOEPF",
-                   "edgeRouting": "POLYLINE",
-                   "direction": direction};
+    var options = {
+      "algorithm": "de.cau.cs.kieler.klay.layered",
+      "layoutHierarchy": true,
+      "spacing": 20,
+      "edgeSpacingFactor": 0.2,
+      "inLayerSpacingFactor": 1.0,
+      "nodePlace": "BRANDES_KOEPF",
+      "nodeLayering": "NETWORK_SIMPLEX",
+      "edgeRouting": "POLYLINE",
+      "crossMin": "LAYER_SWEEP",
+      "direction": direction
+    };
     
     // Convert the NoFlo graph to KGraph
     var kGraph = toKieler(graph, portInfo, direction);
-
-    $klay.layout({graph: kGraph,
-                  options: options,
-                  success: function (layouted) {
-                    render(layouted);
-                  },
-                  error: function (error) {
-                    // CAVEAT: this will catch errors in render callback
-                    console.log("$klay.layout error:", error);
-                  }});
+   
+    $klay.layout({
+      graph: kGraph,
+      options: options,
+      success: function (layouted) {
+        render(layouted);
+      },
+      error: function (error) {
+        // CAVEAT: this will catch errors in render callback
+        console.warn("$klay.layout error:", error);
+      }
+    });
   };
 }
 ;
@@ -38033,7 +38057,9 @@ function klayinit () {
     n4: makeArcPath(7/8, 5/8, 36),
     s4: makeArcPath(3/8, 1/8, 36),
     e4: makeArcPath(1/8, -1/8, 36),
-    w4: makeArcPath(5/8, 3/8, 36)
+    w4: makeArcPath(5/8, 3/8, 36),
+    inport: makeArcPath(-1/4, 1/4, 4),
+    outport: makeArcPath(1/4, -1/4, 4)
   };
 
 
@@ -38622,13 +38648,14 @@ context.TheGraph.FONT_AWESOME = {
         tooltipVisible: false
       });
     },
-    // onFit: function (event) {
-    //   this.setState({
-    //     x: event.detail.x,
-    //     y: event.detail.y,
-    //     scale: event.detail.scale
-    //   });
-    // },
+    triggerFit: function (event) {
+      var fit = TheGraph.findFit(this.props.graph, this.props.width, this.props.height);
+      this.setState({
+        x: fit.x,
+        y: fit.y,
+        scale: fit.scale
+      });
+    },
     edgeStart: function (event) {
       // Listened from PortMenu.edgeStart() and Port.edgeStart()
       this.refs.graph.edgeStart(event);
@@ -40206,31 +40233,31 @@ context.TheGraph.FONT_AWESOME = {
         var fontSize = 6 * (30 / (4 * this.props.label.length));
         style = { "font-size": fontSize+"px" };
       }
-      var r = 3.5;
+      var r = 4;
       return (
         React.DOM.g(
           {
             className: "port arrow",
-            title: this.props.label
+            title: this.props.label,
+            transform: "translate("+this.props.x+","+this.props.y+")"
           },
           React.DOM.circle({
-            className: "port-circle",
-            cx: this.props.x,
-            cy: this.props.y,
-            r: r
+            className: "port-circle-bg", // Transparent, for hit region
+            r: r+1
+          }),
+          React.DOM.path({
+            className: "port-arc",
+            d: (this.props.isIn ? TheGraph.arcs.inport : TheGraph.arcs.outport)
           }),
           React.DOM.circle({
             ref: "circleSmall",
             // className: "port-circle-small fill route"+this.props.route,  // See componentDidUpdate
-            cx: this.props.x,
-            cy: this.props.y,
-            r: r * 5/8
+            r: r-1.5
           }),
           React.DOM.text({
             ref: "label",
             className: "port-label drag",
-            x: this.props.x + (this.props.isIn ? 5 : -5),
-            y: this.props.y,
+            x: (this.props.isIn ? 5 : -5),
             style: style,
             children: this.props.label
           })
@@ -41099,6 +41126,15 @@ context.TheGraph.FONT_AWESOME = {
         // TODO: edge bends
   
         this.graph.endTransaction("autolayout");
+
+        // Fit to window
+        this.triggerFit();
+
+      },
+      triggerFit: function () {
+        if (this.appView) {
+          this.appView.triggerFit();
+        }
       },
       widthChanged: function () {
         if (!this.appView) { return; }
@@ -41483,6 +41519,9 @@ context.TheGraph.FONT_AWESOME = {
       },
       triggerAutolayout: function () {
         this.$.graph.triggerAutolayout();
+      },
+      triggerFit: function () {
+        this.$.graph.triggerFit();
       },
       getComponent: function (name) {
         return this.$.graph.getComponent(name);
