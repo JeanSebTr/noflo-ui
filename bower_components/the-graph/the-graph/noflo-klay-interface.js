@@ -15,16 +15,17 @@ function klayinit () {
   var toKieler = function (graph, portInfo, direction) {
     // Default direction is left to right
     direction = direction || 'RIGHT';
+    var portConstraints = 'FIXED_POS';
     // Default port and node properties
     var portProperties = {
-      inportSide: {'de.cau.cs.kieler.portSide': 'WEST'},
-      outportSide: {'de.cau.cs.kieler.portSide': 'EAST'},
+      inportSide: 'WEST',
+      outportSide: 'EAST',
       width: 10,
       height: 10
     };
     if (direction === 'DOWN') {
-      portProperties.inportSide = {'de.cau.cs.kieler.portSide': 'NORTH'};
-      portProperties.outportSide = {'de.cau.cs.kieler.portSide': 'SOUTH'};
+      portProperties.inportSide = 'NORTH';
+      portProperties.outportSide = 'SOUTH';
     }
     var nodeProperties = {
       width: 72,
@@ -36,7 +37,6 @@ function klayinit () {
       children: [], 
       edges: []
     };
-    
     // Encode nodes
     var nodes = graph.nodes;
     var idx = {};
@@ -49,7 +49,9 @@ function klayinit () {
           id: node.id + '_' + key,
           width: portProperties.width,
           height: portProperties.height,
-          properties: portProperties.inportSide
+          properties: {
+            'de.cau.cs.kieler.portSide': portProperties.inportSide
+          }
         };
       });
       var outPorts = portInfo[node.id].outports;
@@ -59,15 +61,21 @@ function klayinit () {
           id: node.id + '_' + key,
           width: portProperties.width,
           height: portProperties.height,
-          properties: portProperties.outportSide
+          properties: {
+            'de.cau.cs.kieler.portSide': portProperties.outportSide
+          }
         };
       });
+
       var kChild = {
         id: node.id,
         labels: [{text: node.metadata.label}],
         width: nodeProperties.width,
         height: nodeProperties.height,
-        ports: inPortsTemp.concat(outPortsTemp)
+        ports: inPortsTemp.concat(outPortsTemp),
+        properties: {
+          'portConstraints': portConstraints
+        }
       };
       idx[node.id] = countIdx++;
       return kChild;
@@ -84,7 +92,9 @@ function klayinit () {
         id: inport.port,
         width: portProperties.width,
         height: portProperties.height,
-        properties: portProperties.outportSide
+        properties: {
+          'de.cau.cs.kieler.portSide': portProperties.outportSide
+        }
       };
       
       var kChild = {
@@ -93,7 +103,10 @@ function klayinit () {
         width: nodeProperties.width, 
         height: nodeProperties.height,
         ports: [uniquePort],
-        properties: {"de.cau.cs.kieler.klay.layered.layerConstraint": "FIRST_SEPARATE"}
+        properties: {
+          'portConstraints': portConstraints,
+          "de.cau.cs.kieler.klay.layered.layerConstraint": "FIRST_SEPARATE"
+        }
       };
       idx[tempId] = countIdx++;
       return kChild;
@@ -108,7 +121,9 @@ function klayinit () {
         id: outport.port,
         width: portProperties.width,
         height: portProperties.height,
-        properties: portProperties.inportSide
+        properties: {
+          'de.cau.cs.kieler.portSide': portProperties.inportSide
+        }
       };
 
       var kChild = {
@@ -117,7 +132,10 @@ function klayinit () {
         width: nodeProperties.width, 
         height: nodeProperties.height,
         ports: [uniquePort],
-        properties: {"de.cau.cs.kieler.klay.layered.layerConstraint": "LAST_SEPARATE"}
+        properties: {
+          'portConstraints': portConstraints,
+          "de.cau.cs.kieler.klay.layered.layerConstraint": "LAST_SEPARATE"
+        }
       };
       idx[tempId] = countIdx++;
       return kChild;
@@ -244,11 +262,13 @@ function klayinit () {
 
     // Define some preset options to KLayJS
     var options = {
+      "intCoordinates": true,
       "algorithm": "de.cau.cs.kieler.klay.layered",
       "layoutHierarchy": true,
       "spacing": 20,
+      "borderSpacing": 20,
       "edgeSpacingFactor": 0.2,
-      "inLayerSpacingFactor": 1.0,
+      "inLayerSpacingFactor": 2.0,
       "nodePlace": "BRANDES_KOEPF",
       "nodeLayering": "NETWORK_SIMPLEX",
       "edgeRouting": "POLYLINE",

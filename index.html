@@ -62,20 +62,20 @@
 
 <!-- <link rel="import" href="../polymer-dev/polymer.html"> -->
 
-<polymer-element name="the-graph" attributes="graph menus library width height autolayout selectedNodes selectedEdges getMenuDef" assetpath="bower_components/the-graph/the-graph/">
+<polymer-element name="the-graph" attributes="graph menus library width height autolayout theme selectedNodes selectedEdges getMenuDef" assetpath="bower_components/the-graph/the-graph/">
 
   <template>
-    <style>.the-graph-app {
+    <style>.the-graph-dark .the-graph-app {
   background-color: #000;
   position: relative;
 }
-.app-canvas,
-.app-svg {
+.the-graph-dark .app-canvas,
+.the-graph-dark .app-svg {
   position: absolute;
   top: 0;
   left: 0;
 }
-svg {
+.the-graph-dark svg {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
@@ -83,91 +83,100 @@ svg {
   -ms-user-select: none;
   user-select: none;
 }
-.arrow {
+.the-graph-dark .arrow {
   cursor: default;
 }
-.click {
+.the-graph-dark .click {
   cursor: pointer;
 }
-.drag {
+.the-graph-dark .drag {
   cursor: pointer;
   cursor: -moz-grab;
   cursor: -webkit-grab;
   cursor: grab;
 }
-.node-border {
-  fill: none;
-  stroke: #808080;
+.the-graph-dark .node-border {
+  fill: rgba(0,0,0,0.5);
+  stroke: #666;
   stroke-width: 2px;
 }
-.small .node-border {
+.the-graph-dark .small .node-border {
   fill: rgba(230,238,240,0.94);
   stroke: none;
 }
-.node-rect {
+.the-graph-dark .node-rect {
   fill: rgba(230,238,240,0.94);
   stroke: none;
 }
-.node:hover .node-rect {
+.the-graph-dark .node:hover .node-rect {
   fill: rgba(230,238,240,0.97);
-  stroke: var-node-hover-border;
 }
-.ex-inports .node-border {
+.the-graph-dark .node:hover .node-border {
+  stroke: #808080;
+}
+.the-graph-dark .node:hover .port-arc {
+  fill: #808080;
+}
+.the-graph-dark .ex-inports .node-border {
   fill: #1a1a1a;
   stroke: none;
 }
-.ex-outports .node-border {
+.the-graph-dark .ex-outports .node-border {
   fill: #1a1a1a;
   stroke: none;
 }
-.ex-inports .node .node-rect,
-.ex-outports .node .node-rect,
-.ex-inports .node:hover .node-rect,
-.ex-outports .node:hover .node-rect {
+.the-graph-dark .ex-inports .node .node-rect,
+.the-graph-dark .ex-outports .node .node-rect,
+.the-graph-dark .ex-inports .node:hover .node-rect,
+.the-graph-dark .ex-outports .node:hover .node-rect {
   fill: none;
 }
-.small .ex-inports .node .node-border,
-.small .ex-outports .node .node-border {
+.the-graph-dark .small .ex-inports .node .node-border,
+.the-graph-dark .small .ex-outports .node .node-border {
   fill: #1a1a1a;
 }
-.node-bg {
+.the-graph-dark .node-bg {
   opacity: 0;
 }
-.node.selected .node-border {
+.the-graph-dark .node.selected .node-border {
   stroke: #f00;
   stroke-width: 4px;
 }
-path {
+.the-graph-dark .node.selected .port-arc {
+  stroke: #f00;
+  fill: #f00;
+}
+.the-graph-dark path {
   fill: none;
 }
-.edge-bg {
+.the-graph-dark .edge-bg {
   stroke: #000;
-  stroke-width: 4px;
+  stroke-width: 5px;
 }
-.edge:hover .edge-bg {
-  stroke: #808080;
-}
-.edge.selected .edge-bg {
-  stroke-width: 8px;
-  stroke: #f00;
-}
-.edge-fg {
+.the-graph-dark .edge-fg {
   stroke: #fff;
-  stroke-width: 2px;
+  stroke-width: 3px;
   transition-property: stroke-width;
   transition-duration: 0.5s;
 }
-.edge-touch {
-  stroke-width: 10px;
+.the-graph-dark .edge-touch {
+  stroke-width: 7px;
   opacity: 0;
 }
-.small .edge-bg {
+.the-graph-dark .edge:hover .edge-bg {
+  stroke: #808080;
+}
+.the-graph-dark .edge.selected .edge-bg {
+  stroke-width: 8px;
+  stroke: #f00;
+}
+.the-graph-dark .small .edge-bg {
   stroke-width: 8px;
 }
-.small .edge-fg {
-  stroke-width: 4px;
+.the-graph-dark .small .edge-fg {
+  stroke-width: 6px;
 }
-text {
+.the-graph-dark text {
   font-family: "SourceCodePro", "Source Code Pro", Helvetica, Arial, sans-serif;
   text-rendering: geometricPrecision;
 /* makes text scale smoothly */
@@ -176,348 +185,840 @@ text {
   text-anchor: middle;
   dominant-baseline: central;
 }
-.text-bg-rect {
+.the-graph-dark .text-bg-rect {
   fill: rgba(0,0,0,0.5);
 }
-.node-label,
-.node-sublabel {
+.the-graph-dark .node-label,
+.the-graph-dark .node-sublabel {
   text-anchor: middle;
 }
-.small .node-label-bg {
+.the-graph-dark .small .node-label-bg {
   visibility: hidden;
 }
-.node-sublabel {
+.the-graph-dark .node-sublabel {
   font-size: 9px;
 }
-.node-sublabel-bg {
+.the-graph-dark .node-sublabel-bg {
   visibility: hidden;
 }
-.big .node-sublabel-bg {
+.the-graph-dark .big .node-sublabel-bg {
   visibility: visible;
 }
-.iip-path {
+.the-graph-dark .iip-path {
   stroke-width: 1px;
   stroke: #fff;
 }
-.iip-info {
+.the-graph-dark .iip-info {
   visibility: hidden;
 }
-.iip-info .text-bg-text {
+.the-graph-dark .iip-info .text-bg-text {
   font-size: 5px;
   text-anchor: end;
 }
-.big .iip-info {
+.the-graph-dark .big .iip-info {
   visibility: visible;
 }
-.context-modal-bg {
+.the-graph-dark .context-modal-bg {
   fill: rgba(0,0,0,0.5);
 }
-.context-node-rect {
+.the-graph-dark .context-node-rect {
   fill: #121417;
   stroke: #bfbfbf;
   stroke-width: 0.5px;
 }
-.context-node-icon {
+.the-graph-dark .context-node-icon {
   font-size: 30px;
   fill: #fff;
 }
-.context-icon {
+.the-graph-dark .context-icon {
   font-size: 20px;
   fill: #fff;
 }
-.context-node-label {
+.the-graph-dark .context-node-label {
   text-anchor: middle;
 }
-.context-arc {
+.the-graph-dark .context-arc {
   stroke-width: 72px;
   stroke: rgba(43,48,54,0.95);
 }
-.context-slice.click:hover .context-arc {
+.the-graph-dark .context-slice.click:hover .context-arc {
   stroke: rgba(90,102,114,0.95);
 }
-.context-circle {
+.the-graph-dark .context-circle {
   stroke: #bfbfbf;
   fill: none;
   stroke-width: 1.5px;
 }
-.context-circle-x {
+.the-graph-dark .context-circle-x {
   stroke: #bfbfbf;
   fill: none;
   stroke-width: 1px;
 }
-.context-arc-icon-label {
+.the-graph-dark .context-arc-icon-label {
   font-size: 12px;
 }
-.context-port-bg {
+.the-graph-dark .context-port-bg {
   fill: rgba(43,48,54,0.95);
 }
-.context-port-hole {
+.the-graph-dark .context-port-hole {
   stroke-width: 2px;
   fill: rgba(43,48,54,0.95);
   stroke: #bfbfbf;
 }
-.context-port-path {
+.the-graph-dark .context-port-path {
   stroke: #bfbfbf;
 }
-.context-port-label {
+.the-graph-dark .context-port-label {
   fill: #fff;
   dominant-baseline: central;
 }
-.context-port-in .context-port-label {
+.the-graph-dark .context-port-in .context-port-label {
   text-anchor: end;
 }
-.context-port-out .context-port-label {
+.the-graph-dark .context-port-out .context-port-label {
   text-anchor: start;
 }
-.context-edge-label-out {
+.the-graph-dark .context-edge-label-out {
   text-anchor: end;
   dominant-baseline: central;
 }
-.context-edge-label-in {
+.the-graph-dark .context-edge-label-in {
   text-anchor: start;
   dominant-baseline: central;
 }
-.tooltip {
+.the-graph-dark .tooltip {
   opacity: 1;
   transition-property: opacity;
   transition-duration: 0.3s;
 }
-.tooltip.hidden {
+.the-graph-dark .tooltip.hidden {
   opacity: 0;
 }
-.tooltip-bg {
+.the-graph-dark .tooltip-bg {
   fill: rgba(0,0,0,0.9);
   opacity: 0.75;
 }
-.tooltip-label {
+.the-graph-dark .tooltip-label {
   text-anchor: start;
   font-size: 10px;
 }
-.icon {
+.the-graph-dark .icon {
   font-family: 'FontAwesomeSVG';
   text-anchor: middle;
   dominant-baseline: central;
 }
-.node-icon {
+.the-graph-dark .node-icon {
   font-size: 45px;
   fill: #5e6a6e;
   transition-property: font-size, fill;
   transition-duration: 0.5s, 0.3s;
 }
-.small .node-icon {
+.the-graph-dark .small .node-icon {
   fill: #2f3537;
   font-size: 66px;
 }
-.big .node-icon {
+.the-graph-dark .big .node-icon {
   fill: #c8ced0;
 }
-.ex-inports .node-icon,
-.small .ex-inports .node-icon {
+.the-graph-dark .ex-inports .node-icon,
+.the-graph-dark .small .ex-inports .node-icon {
   fill: #e88802;
 }
-.ex-outports .node-icon,
-.small .ex-outports .node-icon {
+.the-graph-dark .ex-outports .node-icon,
+.the-graph-dark .small .ex-outports .node-icon {
   fill: #02e83c;
 }
-.port-circle-bg {
-  fill: #808080;
+.the-graph-dark .port-circle-bg {
+  fill: #666;
   opacity: 0;
 }
-.port-arc {
-  fill: #808080;
+.the-graph-dark .port-arc {
+  fill: #666;
 }
-.port-circle-small {
+.the-graph-dark .port-circle-small {
   fill: none;
 }
-.small .port-circle {
+.the-graph-dark .small .port-circle {
   visibility: hidden;
 }
-.port-label {
+.the-graph-dark .port-label {
   fill: #0c0d0e;
   visibility: hidden;
   font-size: 6px;
   dominant-baseline: central;
 }
-.inports .port-label {
+.the-graph-dark .inports .port-label {
   text-anchor: start;
 }
-.outports .port-label {
+.the-graph-dark .outports .port-label {
   text-anchor: end;
 }
-.big .port-label {
+.the-graph-dark .big .port-label {
   visibility: visible;
 }
-.big .ex-inports .port-label,
-.big .ex-outports .port-label {
+.the-graph-dark .big .ex-inports .port-label,
+.the-graph-dark .big .ex-outports .port-label {
   visibility: hidden;
 }
-.group-box {
+.the-graph-dark .group-box {
   fill: rgba(191,191,191,0.15);
   transition-property: fill;
   transition-duration: 0.3s;
 }
-.group-box:hover {
+.the-graph-dark .group-box:hover {
   fill: rgba(191,191,191,0.25);
 }
-.group-box.color0 {
+.the-graph-dark .small .group-box {
+  stroke-width: 8px;
+}
+.the-graph-dark .group-box.color0 {
   fill: rgba(191,191,191,0.15);
+  stroke: none;
 }
-.group-box.color1 {
+.the-graph-dark .group-box.color1 {
   fill: rgba(255,128,128,0.15);
+  stroke: none;
 }
-.group-box.color2 {
+.the-graph-dark .group-box.color2 {
   fill: rgba(255,202,128,0.15);
+  stroke: none;
 }
-.group-box.color3 {
+.the-graph-dark .group-box.color3 {
   fill: rgba(255,255,128,0.15);
+  stroke: none;
 }
-.group-box.color4 {
+.the-graph-dark .group-box.color4 {
   fill: rgba(128,255,159,0.15);
+  stroke: none;
 }
-.group-box.color5 {
+.the-graph-dark .group-box.color5 {
   fill: rgba(128,255,212,0.15);
+  stroke: none;
 }
-.group-box.color6 {
+.the-graph-dark .group-box.color6 {
   fill: rgba(128,244,255,0.15);
+  stroke: none;
 }
-.group-box.color7 {
+.the-graph-dark .group-box.color7 {
   fill: rgba(128,191,255,0.15);
+  stroke: none;
 }
-.group-box.color8 {
+.the-graph-dark .group-box.color8 {
   fill: rgba(223,128,255,0.15);
+  stroke: none;
 }
-.group-box.color9 {
+.the-graph-dark .group-box.color9 {
   fill: rgba(255,128,234,0.15);
+  stroke: none;
 }
-.group-box.color10 {
+.the-graph-dark .group-box.color10 {
   fill: rgba(255,128,181,0.15);
+  stroke: none;
 }
-.group-box.color0:hover {
+.the-graph-dark .group-box.color0:hover {
   fill: rgba(191,191,191,0.25);
 }
-.group-box.color1:hover {
+.the-graph-dark .group-box.color1:hover {
   fill: rgba(255,128,128,0.25);
 }
-.group-box.color2:hover {
+.the-graph-dark .group-box.color2:hover {
   fill: rgba(255,202,128,0.25);
 }
-.group-box.color3:hover {
+.the-graph-dark .group-box.color3:hover {
   fill: rgba(255,255,128,0.25);
 }
-.group-box.color4:hover {
+.the-graph-dark .group-box.color4:hover {
   fill: rgba(128,255,159,0.25);
 }
-.group-box.color5:hover {
+.the-graph-dark .group-box.color5:hover {
   fill: rgba(128,255,212,0.25);
 }
-.group-box.color6:hover {
+.the-graph-dark .group-box.color6:hover {
   fill: rgba(128,244,255,0.25);
 }
-.group-box.color7:hover {
+.the-graph-dark .group-box.color7:hover {
   fill: rgba(128,191,255,0.25);
 }
-.group-box.color8:hover {
+.the-graph-dark .group-box.color8:hover {
   fill: rgba(223,128,255,0.25);
 }
-.group-box.color9:hover {
+.the-graph-dark .group-box.color9:hover {
   fill: rgba(255,128,234,0.25);
 }
-.group-box.color10:hover {
+.the-graph-dark .group-box.color10:hover {
   fill: rgba(255,128,181,0.25);
 }
-.group-box.selection {
+.the-graph-dark .group-box.selection {
   fill: rgba(255,102,102,0.15);
   stroke: #f00;
   stroke-width: 1px;
 }
-.group-box.selection:hover {
+.the-graph-dark .group-box.selection:hover {
   fill: rgba(255,102,102,0.25);
 }
-.group-label {
+.the-graph-dark .group-label {
   text-anchor: start;
   fill: #fff;
   font-size: 20px;
   transition-property: font-size;
   transition-duration: 0.5s;
 }
-.small .group-label {
+.the-graph-dark .small .group-label {
   font-size: 30px;
   transition-property: font-size;
   transition-duration: 0.5s;
 }
-.group-description {
+.the-graph-dark .group-description {
   fill: #fff;
   font-size: 12px;
   text-anchor: start;
 }
-.small .group-description {
+.the-graph-dark .small .group-description {
   visibility: hidden;
 }
-.stroke.route0 {
+.the-graph-dark .stroke.route0 {
   stroke: #fff;
 }
-.stroke.route1 {
+.the-graph-dark .stroke.route1 {
   stroke: #e80202;
 }
-.stroke.route2 {
+.the-graph-dark .stroke.route2 {
   stroke: #e88802;
 }
-.stroke.route3 {
+.the-graph-dark .stroke.route3 {
   stroke: #e8e802;
 }
-.stroke.route4 {
+.the-graph-dark .stroke.route4 {
   stroke: #02e83c;
 }
-.stroke.route5 {
+.the-graph-dark .stroke.route5 {
   stroke: #02e89c;
 }
-.stroke.route6 {
+.the-graph-dark .stroke.route6 {
   stroke: #02d5e8;
 }
-.stroke.route7 {
+.the-graph-dark .stroke.route7 {
   stroke: #0275e8;
 }
-.stroke.route8 {
+.the-graph-dark .stroke.route8 {
   stroke: #af02e8;
 }
-.stroke.route9 {
+.the-graph-dark .stroke.route9 {
   stroke: #e802c2;
 }
-.stroke.route10 {
+.the-graph-dark .stroke.route10 {
   stroke: #e80262;
 }
-.fill.route0 {
+.the-graph-dark .fill.route0 {
   fill: #fff;
 }
-.fill.route1 {
+.the-graph-dark .fill.route1 {
   fill: #e80202;
 }
-.fill.route2 {
+.the-graph-dark .fill.route2 {
   fill: #e88802;
 }
-.fill.route3 {
+.the-graph-dark .fill.route3 {
   fill: #e8e802;
 }
-.fill.route4 {
+.the-graph-dark .fill.route4 {
   fill: #02e83c;
 }
-.fill.route5 {
+.the-graph-dark .fill.route5 {
   fill: #02e89c;
 }
-.fill.route6 {
+.the-graph-dark .fill.route6 {
   fill: #02d5e8;
 }
-.fill.route7 {
+.the-graph-dark .fill.route7 {
   fill: #0275e8;
 }
-.fill.route8 {
+.the-graph-dark .fill.route8 {
   fill: #af02e8;
 }
-.fill.route9 {
+.the-graph-dark .fill.route9 {
   fill: #e802c2;
 }
-.fill.route10 {
+.the-graph-dark .fill.route10 {
   fill: #e80262;
+}
+</style>
+    <style>.the-graph-light .the-graph-app {
+  background-color: #fff;
+  position: relative;
+}
+.the-graph-light .app-canvas,
+.the-graph-light .app-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.the-graph-light svg {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.the-graph-light .arrow {
+  cursor: default;
+}
+.the-graph-light .click {
+  cursor: pointer;
+}
+.the-graph-light .drag {
+  cursor: pointer;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+  cursor: grab;
+}
+.the-graph-light .node-border {
+  fill: rgba(255,255,255,0.5);
+  stroke: #3b4245;
+  stroke-width: 2px;
+}
+.the-graph-light .small .node-border {
+  fill: rgba(230,238,240,0.94);
+  stroke: none;
+}
+.the-graph-light .node-rect {
+  fill: rgba(230,238,240,0.94);
+  stroke: none;
+}
+.the-graph-light .node:hover .node-rect {
+  fill: rgba(230,238,240,0.97);
+}
+.the-graph-light .node:hover .node-border {
+  stroke: #808080;
+}
+.the-graph-light .node:hover .port-arc {
+  fill: #808080;
+}
+.the-graph-light .ex-inports .node-border {
+  fill: #e6e6e6;
+  stroke: none;
+}
+.the-graph-light .ex-outports .node-border {
+  fill: #e6e6e6;
+  stroke: none;
+}
+.the-graph-light .ex-inports .node .node-rect,
+.the-graph-light .ex-outports .node .node-rect,
+.the-graph-light .ex-inports .node:hover .node-rect,
+.the-graph-light .ex-outports .node:hover .node-rect {
+  fill: none;
+}
+.the-graph-light .small .ex-inports .node .node-border,
+.the-graph-light .small .ex-outports .node .node-border {
+  fill: #e6e6e6;
+}
+.the-graph-light .node-bg {
+  opacity: 0;
+}
+.the-graph-light .node.selected .node-border {
+  stroke: #f00;
+  stroke-width: 4px;
+}
+.the-graph-light .node.selected .port-arc {
+  stroke: #f00;
+  fill: #f00;
+}
+.the-graph-light path {
+  fill: none;
+}
+.the-graph-light .edge-bg {
+  stroke: #e6e6e6;
+  stroke-width: 6px;
+}
+.the-graph-light .edge-fg {
+  stroke: #a0a5a9;
+  stroke-width: 4px;
+  transition-property: stroke-width;
+  transition-duration: 0.5s;
+}
+.the-graph-light .edge-touch {
+  stroke-width: 8px;
+  opacity: 0;
+}
+.the-graph-light .edge:hover .edge-bg {
+  stroke: #808080;
+}
+.the-graph-light .edge.selected .edge-bg {
+  stroke-width: 10px;
+  stroke: #f00;
+}
+.the-graph-light .small .edge-bg {
+  stroke-width: 10px;
+}
+.the-graph-light .small .edge-fg {
+  stroke-width: 8px;
+}
+.the-graph-light text {
+  font-family: "SourceCodePro", "Source Code Pro", Helvetica, Arial, sans-serif;
+  text-rendering: geometricPrecision;
+/* makes text scale smoothly */
+  font-size: 14px;
+  fill: #000;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.the-graph-light .text-bg-rect {
+  fill: rgba(255,255,255,0.5);
+}
+.the-graph-light .node-label,
+.the-graph-light .node-sublabel {
+  text-anchor: middle;
+}
+.the-graph-light .small .node-label-bg {
+  visibility: hidden;
+}
+.the-graph-light .node-sublabel {
+  font-size: 9px;
+}
+.the-graph-light .node-sublabel-bg {
+  visibility: hidden;
+}
+.the-graph-light .big .node-sublabel-bg {
+  visibility: visible;
+}
+.the-graph-light .iip-path {
+  stroke-width: 1px;
+  stroke: #a0a5a9;
+}
+.the-graph-light .iip-info {
+  visibility: hidden;
+}
+.the-graph-light .iip-info .text-bg-text {
+  font-size: 5px;
+  text-anchor: end;
+}
+.the-graph-light .big .iip-info {
+  visibility: visible;
+}
+.the-graph-light .context-modal-bg {
+  fill: rgba(255,255,255,0.5);
+}
+.the-graph-light .context-node-rect {
+  fill: #e0e3e6;
+  stroke: #404040;
+  stroke-width: 0.5px;
+}
+.the-graph-light .context-node-icon {
+  font-size: 30px;
+  fill: #000;
+}
+.the-graph-light .context-icon {
+  font-size: 20px;
+  fill: #000;
+}
+.the-graph-light .context-node-label {
+  text-anchor: middle;
+}
+.the-graph-light .context-arc {
+  stroke-width: 72px;
+  stroke: rgba(224,227,230,0.95);
+}
+.the-graph-light .context-slice.click:hover .context-arc {
+  stroke: rgba(195,201,208,0.95);
+}
+.the-graph-light .context-circle {
+  stroke: #404040;
+  fill: none;
+  stroke-width: 1.5px;
+}
+.the-graph-light .context-circle-x {
+  stroke: #404040;
+  fill: none;
+  stroke-width: 1px;
+}
+.the-graph-light .context-arc-icon-label {
+  font-size: 12px;
+}
+.the-graph-light .context-port-bg {
+  fill: rgba(224,227,230,0.95);
+}
+.the-graph-light .context-port-hole {
+  stroke-width: 2px;
+  fill: rgba(224,227,230,0.95);
+  stroke: #404040;
+}
+.the-graph-light .context-port-path {
+  stroke: #404040;
+}
+.the-graph-light .context-port-label {
+  fill: #000;
+  dominant-baseline: central;
+}
+.the-graph-light .context-port-in .context-port-label {
+  text-anchor: end;
+}
+.the-graph-light .context-port-out .context-port-label {
+  text-anchor: start;
+}
+.the-graph-light .context-edge-label-out {
+  text-anchor: end;
+  dominant-baseline: central;
+}
+.the-graph-light .context-edge-label-in {
+  text-anchor: start;
+  dominant-baseline: central;
+}
+.the-graph-light .tooltip {
+  opacity: 1;
+  transition-property: opacity;
+  transition-duration: 0.3s;
+}
+.the-graph-light .tooltip.hidden {
+  opacity: 0;
+}
+.the-graph-light .tooltip-bg {
+  fill: rgba(255,255,255,0.9);
+  opacity: 0.75;
+}
+.the-graph-light .tooltip-label {
+  text-anchor: start;
+  font-size: 10px;
+}
+.the-graph-light .icon {
+  font-family: 'FontAwesomeSVG';
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.the-graph-light .node-icon {
+  font-size: 45px;
+  fill: #3b4245;
+  transition-property: font-size, fill;
+  transition-duration: 0.5s, 0.3s;
+}
+.the-graph-light .small .node-icon {
+  fill: #171b1c;
+  font-size: 66px;
+}
+.the-graph-light .big .node-icon {
+  fill: #c8ced0;
+}
+.the-graph-light .ex-inports .node-icon,
+.the-graph-light .small .ex-inports .node-icon {
+  fill: #ee7c0e;
+}
+.the-graph-light .ex-outports .node-icon,
+.the-graph-light .small .ex-outports .node-icon {
+  fill: #00782a;
+}
+.the-graph-light .port-circle-bg {
+  fill: #3b4245;
+  opacity: 0;
+}
+.the-graph-light .port-arc {
+  fill: #3b4245;
+}
+.the-graph-light .port-circle-small {
+  fill: none;
+}
+.the-graph-light .small .port-circle {
+  visibility: hidden;
+}
+.the-graph-light .port-label {
+  fill: #0c0d0e;
+  visibility: hidden;
+  font-size: 6px;
+  dominant-baseline: central;
+}
+.the-graph-light .inports .port-label {
+  text-anchor: start;
+}
+.the-graph-light .outports .port-label {
+  text-anchor: end;
+}
+.the-graph-light .big .port-label {
+  visibility: visible;
+}
+.the-graph-light .big .ex-inports .port-label,
+.the-graph-light .big .ex-outports .port-label {
+  visibility: hidden;
+}
+.the-graph-light .group-box {
+  fill: rgba(191,191,191,0.25);
+  transition-property: fill;
+  transition-duration: 0.3s;
+}
+.the-graph-light .group-box:hover {
+  fill: rgba(191,191,191,0.35);
+}
+.the-graph-light .small .group-box {
+  stroke-width: 8px;
+}
+.the-graph-light .group-box.color0 {
+  fill: rgba(191,191,191,0.25);
+  stroke: var-group00-stroke;
+}
+.the-graph-light .group-box.color1 {
+  fill: rgba(223,159,159,0.25);
+  stroke: var-group01-stroke;
+}
+.the-graph-light .group-box.color2 {
+  fill: rgba(223,197,159,0.25);
+  stroke: var-group02-stroke;
+}
+.the-graph-light .group-box.color3 {
+  fill: rgba(223,223,159,0.25);
+  stroke: var-group03-stroke;
+}
+.the-graph-light .group-box.color4 {
+  fill: rgba(159,223,175,0.25);
+  stroke: var-group04-stroke;
+}
+.the-graph-light .group-box.color5 {
+  fill: rgba(159,223,202,0.25);
+  stroke: var-group05-stroke;
+}
+.the-graph-light .group-box.color6 {
+  fill: rgba(159,218,223,0.25);
+  stroke: var-group06-stroke;
+}
+.the-graph-light .group-box.color7 {
+  fill: rgba(159,191,223,0.25);
+  stroke: var-group07-stroke;
+}
+.the-graph-light .group-box.color8 {
+  fill: rgba(207,159,223,0.25);
+  stroke: var-group08-stroke;
+}
+.the-graph-light .group-box.color9 {
+  fill: rgba(223,159,212,0.25);
+  stroke: var-group09-stroke;
+}
+.the-graph-light .group-box.color10 {
+  fill: rgba(223,159,186,0.25);
+  stroke: var-group10-stroke;
+}
+.the-graph-light .group-box.color0:hover {
+  fill: rgba(191,191,191,0.35);
+}
+.the-graph-light .group-box.color1:hover {
+  fill: rgba(223,159,159,0.35);
+}
+.the-graph-light .group-box.color2:hover {
+  fill: rgba(223,197,159,0.35);
+}
+.the-graph-light .group-box.color3:hover {
+  fill: rgba(223,223,159,0.35);
+}
+.the-graph-light .group-box.color4:hover {
+  fill: rgba(159,223,175,0.35);
+}
+.the-graph-light .group-box.color5:hover {
+  fill: rgba(159,223,202,0.35);
+}
+.the-graph-light .group-box.color6:hover {
+  fill: rgba(159,218,223,0.35);
+}
+.the-graph-light .group-box.color7:hover {
+  fill: rgba(159,191,223,0.35);
+}
+.the-graph-light .group-box.color8:hover {
+  fill: rgba(207,159,223,0.35);
+}
+.the-graph-light .group-box.color9:hover {
+  fill: rgba(223,159,212,0.35);
+}
+.the-graph-light .group-box.color10:hover {
+  fill: rgba(223,159,186,0.35);
+}
+.the-graph-light .group-box.selection {
+  fill: rgba(255,102,102,0.15);
+  stroke: #f00;
+  stroke-width: 1px;
+}
+.the-graph-light .group-box.selection:hover {
+  fill: rgba(255,102,102,0.25);
+}
+.the-graph-light .group-label {
+  text-anchor: start;
+  fill: #000;
+  font-size: 20px;
+  transition-property: font-size;
+  transition-duration: 0.5s;
+}
+.the-graph-light .small .group-label {
+  font-size: 30px;
+  transition-property: font-size;
+  transition-duration: 0.5s;
+}
+.the-graph-light .group-description {
+  fill: #000;
+  font-size: 12px;
+  text-anchor: start;
+}
+.the-graph-light .small .group-description {
+  visibility: hidden;
+}
+.the-graph-light .stroke.route0 {
+  stroke: #a0a5a9;
+}
+.the-graph-light .stroke.route1 {
+  stroke: #e32017;
+}
+.the-graph-light .stroke.route2 {
+  stroke: #ee7c0e;
+}
+.the-graph-light .stroke.route3 {
+  stroke: #ffd300;
+}
+.the-graph-light .stroke.route4 {
+  stroke: #00782a;
+}
+.the-graph-light .stroke.route5 {
+  stroke: #95cdba;
+}
+.the-graph-light .stroke.route6 {
+  stroke: #0098d4;
+}
+.the-graph-light .stroke.route7 {
+  stroke: #003688;
+}
+.the-graph-light .stroke.route8 {
+  stroke: #9b0056;
+}
+.the-graph-light .stroke.route9 {
+  stroke: #f3a9bb;
+}
+.the-graph-light .stroke.route10 {
+  stroke: #b36305;
+}
+.the-graph-light .fill.route0 {
+  fill: #a0a5a9;
+}
+.the-graph-light .fill.route1 {
+  fill: #e32017;
+}
+.the-graph-light .fill.route2 {
+  fill: #ee7c0e;
+}
+.the-graph-light .fill.route3 {
+  fill: #ffd300;
+}
+.the-graph-light .fill.route4 {
+  fill: #00782a;
+}
+.the-graph-light .fill.route5 {
+  fill: #95cdba;
+}
+.the-graph-light .fill.route6 {
+  fill: #0098d4;
+}
+.the-graph-light .fill.route7 {
+  fill: #003688;
+}
+.the-graph-light .fill.route8 {
+  fill: #9b0056;
+}
+.the-graph-light .fill.route9 {
+  fill: #f3a9bb;
+}
+.the-graph-light .fill.route10 {
+  fill: #b36305;
 }
 </style>
     <div id="svgcontainer"></div>
@@ -546,9 +1047,9 @@ text {
 
 <!-- <link rel="import" href="../the-graph-nav/the-graph-nav.html"> -->
 
-<polymer-element name="the-graph-editor" attributes="grid snap width height autolayout selectedNodes selectedEdges onContextMenu" touch-action="none" assetpath="bower_components/the-graph/the-graph-editor/">
+<polymer-element name="the-graph-editor" attributes="grid snap width height autolayout theme selectedNodes selectedEdges onContextMenu" touch-action="none" assetpath="bower_components/the-graph/the-graph-editor/">
   <template>
-    <the-graph id="graph" name="{{ graph.properties.name }}" graph="{{nofloGraph}}" menus="{{menus}}" width="{{width}}" height="{{height}}" autolayout="{{autolayout}}" selectednodes="{{selectedNodes}}" selectededges="{{selectedEdges}}" getmenudef="{{getMenuDef}}"></the-graph>
+    <the-graph id="graph" name="{{ graph.properties.name }}" graph="{{nofloGraph}}" menus="{{menus}}" width="{{width}}" height="{{height}}" autolayout="{{autolayout}}" theme="{{theme}}" selectednodes="{{selectedNodes}}" selectededges="{{selectedEdges}}" getmenudef="{{getMenuDef}}"></the-graph>
   </template>
   
 </polymer-element>
