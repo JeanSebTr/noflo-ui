@@ -19133,6 +19133,9 @@ IframeRuntime = (function(_super) {
       if (w.location.href === 'about:blank') {
         return;
       }
+      if (w.location.href.indexOf('chrome-extension://') !== -1) {
+        throw new Error('Use * for IFRAME communications in a Chrome app');
+      }
     } catch (_error) {
       e = _error;
       w.postMessage({

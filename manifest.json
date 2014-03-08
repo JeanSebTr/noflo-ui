@@ -1,5 +1,6 @@
 {
   "name": "NoFlo Development Environment",
+  "short_name": "NoFlo UI",
   "description": "Flow-Based Programming Environment",
   "version": "0.1.0",
   "app": {
@@ -14,6 +15,7 @@
   },
   "permissions": [
     "https://passport.thegrid.io/",
+    "https://noflo-gate.herokuapp.com/",
     "https://api.github.com/",
     "https://api.flowhub.io/",
     "https://secure.gravatar.com/",
@@ -22,7 +24,6 @@
     "identity"
   ],
   "icons": {
-    "16": "app/noflo-16.png",
     "128": "app/noflo-128.png"
   }
 }

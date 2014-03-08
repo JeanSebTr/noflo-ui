@@ -35815,6 +35815,9 @@ IframeRuntime = (function(_super) {
       if (w.location.href === 'about:blank') {
         return;
       }
+      if (w.location.href.indexOf('chrome-extension://') !== -1) {
+        throw new Error('Use * for IFRAME communications in a Chrome app');
+      }
     } catch (_error) {
       e = _error;
       w.postMessage({
@@ -42710,7 +42713,7 @@ context.TheGraph.FONT_AWESOME = {
       Polymer('noflo-account', {
         clientid: '',
         site: 'https://passport.thegrid.io',
-        gatekeeper: 'https://noflo-gate.herokuapp.com/authenticate/',
+        gatekeeper: 'https://noflo-gate.herokuapp.com/',
         redirect: '',
         user: null,
         plan: 'free',
@@ -42725,6 +42728,8 @@ context.TheGraph.FONT_AWESOME = {
         },
         help: null,
         login: function () {
+          var button = document.getElementById('loginbutton');
+          button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
           if (typeof chrome !== 'undefined' && chrome.identity) {
             this.redirect = chrome.identity.getRedirectURL();
             chrome.identity.launchWebAuthFlow({
@@ -42732,6 +42737,7 @@ context.TheGraph.FONT_AWESOME = {
               url: this.getLoginUrl()
             }, function (responseUrl) {
               if (chrome.runtime.lastError) {
+                button.innerHTML = 'Login';
                 return;
               }
               this.remoteLogin(responseUrl, false);
@@ -42772,6 +42778,7 @@ context.TheGraph.FONT_AWESOME = {
                 return;
               }
               if (req.status === 200) {
+                this.help.close();
                 var data = JSON.parse(req.responseText);
                 if (data.token) {
                   // Save the access token
@@ -42792,7 +42799,7 @@ context.TheGraph.FONT_AWESOME = {
                 this.clearCache();
               }
             }.bind(this);
-            req.open('GET', this.gatekeeper + code[1], true);
+            req.open('GET', this.gatekeeper + '/authenticate/' + code[1], true);
             req.send(null);
           } else {
             this.help.show('New to NoFlo Development Environment?', 'Start by logging into your <a href="http://flowhub.io/" target="_blank">Flowhub</a> account, and you\'ll be able to synchronize projects with GitHub and download examples.');
