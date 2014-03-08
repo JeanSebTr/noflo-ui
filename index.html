@@ -17,7 +17,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph library width height" outports="edges nodes"></noflo-polymer>
     
     
-    <noflo-polymer name="noflo-context" inports="runtimes db project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="runtimes db project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
     
@@ -3332,7 +3332,7 @@ THE SOFTWARE.
     </script>
     <script type="application/fbp" id="LoadExample">
       INPORT=SplitGist.IN:GIST
-      OUTPORT=ParseExample.OUT:GRAPH
+      OUTPORT=SetGraphId.OUT:GRAPH
       OUTPORT=Errors.OUT:ERROR
       'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
       '/' -> DELIMITER CreateUrl(strings/CompileString)
@@ -3348,6 +3348,10 @@ THE SOFTWARE.
       GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
       GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
+      'id' -> PROPERTY SetGraphId(graph/SetPropertyValue)
+      SplitGist OUT -> VALUE SetGraphId
+      ParseExample OUT -> IN ConvertGraph(graph/LoadJson)
+      ConvertGraph OUT -> IN SetGraphId
     </script>
     <script type="application/fbp" id="EnsureId">
       INPORT=Item.IN:IN
@@ -3564,6 +3568,7 @@ THE SOFTWARE.
       Context CURRENTGRAPH -> CURRENTGRAPH GraphEditor(local/GraphEditor)
       Runtime RUNTIME -> RUNTIME GraphEditor
       Context NEWGRAPH -> NEWGRAPH GraphEditor
+      Context EXAMPLE -> EXAMPLE GraphEditor
       Context PROJECT -> PROJECT GraphEditor
       GraphEditor EDITOR -> EDITOR Library
       GraphEditor EDITOR -> EDITOR Context
@@ -3597,6 +3602,7 @@ THE SOFTWARE.
       INPORT=ConnectRuntime.RUNTIME:RUNTIME
       INPORT=ConnectRuntime.PROJECT:PROJECT
       INPORT=ConnectRuntime.NEWGRAPH:NEWGRAPH
+      INPORT=ConnectRuntime.EXAMPLE:EXAMPLE
       INPORT=Graph.IN:CURRENTGRAPH
       INPORT=GraphEditor.WIDTH:WIDTH
       INPORT=GraphEditor.HEIGHT:HEIGHT
@@ -3668,7 +3674,7 @@ THE SOFTWARE.
       Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
       Context PROJECTCHANGED -> ITEM StoreProject
       Context RUNTIMECHANGED -> ITEM StoreRuntime
-      Context NEWGRAPH -> ITEM StoreGraph
+      Context NEWGRAPH -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> ITEM StoreComponent
 
       # Handle GitHub tokens

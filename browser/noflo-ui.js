@@ -19472,10 +19472,12 @@ ConnectRuntime = (function(_super) {
     this.runtime = null;
     this.connected = false;
     this.project = null;
+    this.example = null;
     this.inPorts = {
       editor: new noflo.Port('object'),
       project: new noflo.Port('object'),
       newgraph: new noflo.Port('object'),
+      example: new noflo.Port('object'),
       runtime: new noflo.Port('object')
     };
     this.outPorts = {
@@ -19495,11 +19497,18 @@ ConnectRuntime = (function(_super) {
     this.inPorts.project.on('data', (function(_this) {
       return function(project) {
         _this.project = project;
+        return _this.example = null;
       };
     })(this));
     this.inPorts.newgraph.on('data', (function(_this) {
       return function(data) {
         return _this.sendGraph(_this.runtime, data);
+      };
+    })(this));
+    this.inPorts.example.on('data', (function(_this) {
+      return function(example) {
+        _this.example = example;
+        return _this.sendGraph(_this.runtime, _this.example);
       };
     })(this));
     this.inPorts.runtime.on('connect', (function(_this) {
@@ -19706,7 +19715,10 @@ ConnectRuntime = (function(_super) {
         _this.connected = true;
         runtime.sendComponent('list', '');
         if (_this.project) {
-          return _this.sendProject(_this.runtime, _this.project);
+          _this.sendProject(_this.runtime, _this.project);
+        }
+        if (_this.example) {
+          return _this.sendGraph(_this.runtime, _this.example);
         }
       };
     })(this));
