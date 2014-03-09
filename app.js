@@ -42199,7 +42199,7 @@ context.TheGraph.FONT_AWESOME = {
             return defaultMenu;
           }
           var componentParts = options.item.component.split('/');
-          if (componentParts.shift() !== this.project.id) {
+          if (!this.project || componentParts.shift() !== this.project.id) {
             return defaultMenu;
           }
           var i, menuKey;
@@ -42350,6 +42350,9 @@ context.TheGraph.FONT_AWESOME = {
       },
       subgraph: function (currentGraph, itemKey, item) {
         event.preventDefault();
+        if (!this.project) {
+          return;
+        }
 
         // Ask user to name the new subgraph
         var dialog = document.createElement('noflo-new-graph');
@@ -50451,7 +50454,7 @@ CodeMirror.defineMIME("text/html", "htmlmixed");
             return;
           }
           var component = this.editor.getComponent(name);
-          if (component.subgraph) {
+          if (component.subgraph && this.project) {
             var nameParts = component.name.split('/');
             if (nameParts[0] === this.project.id) {
               for (var i = 0; i < this.graphs.length; i++) {
