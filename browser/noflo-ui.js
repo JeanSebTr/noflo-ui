@@ -18110,7 +18110,7 @@ CreateGraph = (function(_super) {
   CreateGraph.prototype.normalizeProps = function(details) {
     if (details.type) {
       details.environment = {
-        runtime: details.type
+        type: details.type
       };
       delete details.type;
     }

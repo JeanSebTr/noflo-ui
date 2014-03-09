@@ -11,8 +11,7 @@
 
   TheGraph.Edge = React.createClass({
     mixins: [
-      TheGraph.mixins.Tooltip,
-      TheGraph.mixins.SavePointer
+      TheGraph.mixins.Tooltip
     ],
     componentWillMount: function() {
     },
@@ -25,8 +24,6 @@
 
       // Context menu
       if (this.props.showContext) {
-        this.getDOMNode().addEventListener("pointerdown", this.stopPropagationSecondary);
-        this.getDOMNode().addEventListener("pointerup", this.stopPropagationSecondary);
         this.getDOMNode().addEventListener("contextmenu", this.showContext);
         this.getDOMNode().addEventListener("hold", this.showContext);
       }
@@ -38,23 +35,12 @@
       var toggle = (TheGraph.metaKeyPressed || event.pointerType==="touch");
       this.props.onEdgeSelection(this.props.key, this.props.edge, toggle);
     },
-    stopPropagationSecondary: function (event) {
-      // HACK to not tap graph
-      if (event.buttons && event.buttons===2) {
-        event.stopPropagation();
-      }
-    },
     showContext: function (event) {
       // Don't show native context menu
       event.preventDefault();
 
       var x = event.clientX;
       var y = event.clientY;
-
-      if (x === undefined) {
-        x = this.pointerX;
-        y = this.pointerY;
-      }
 
       // App.showContext
       this.props.showContext({

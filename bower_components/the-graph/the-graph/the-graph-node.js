@@ -11,8 +11,7 @@
   // Node view
   TheGraph.Node = React.createClass({
     mixins: [
-      TheGraph.mixins.Tooltip,
-      TheGraph.mixins.SavePointer
+      TheGraph.mixins.Tooltip
     ],
     componentDidMount: function () {
       // Dragging
@@ -25,8 +24,6 @@
 
       // Context menu
       if (this.props.showContext) {
-        this.getDOMNode().addEventListener("pointerdown", this.stopPropagation);
-        this.getDOMNode().addEventListener("pointerup", this.stopPropagation);
         this.getDOMNode().addEventListener("contextmenu", this.showContext);
         this.getDOMNode().addEventListener("hold", this.showContext);
       }
@@ -121,12 +118,6 @@
         this.props.graph.endTransaction('movenode');
       }
     },
-    stopPropagation: function (event) {
-      // HACK to keep context menu from cancelling preview edge
-      if (event.buttons && event.buttons===2) {
-        event.stopPropagation();
-      }
-    },
     showContext: function (event) {
       // Don't show native context menu
       event.preventDefault();
@@ -138,10 +129,6 @@
       // Get mouse position
       var x = event.clientX;
       var y = event.clientY;
-      if (x === undefined) {
-        x = this.pointerX;
-        y = this.pointerY;
-      }
 
       // App.showContext
       this.props.showContext({

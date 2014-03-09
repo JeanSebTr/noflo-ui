@@ -7,9 +7,6 @@
   // Group view
 
   TheGraph.Group = React.createClass({
-    mixins: [
-      TheGraph.mixins.SavePointer
-    ],
     componentDidMount: function () {
       // Move group
       if (this.props.isSelectionGroup) {
@@ -21,8 +18,6 @@
 
       // Context menu
       if (this.props.showContext) {
-        this.getDOMNode().addEventListener("pointerdown", this.stopPropagationSecondary);
-        this.getDOMNode().addEventListener("pointerup", this.stopPropagationSecondary);
         this.getDOMNode().addEventListener("contextmenu", this.showContext);
         this.getDOMNode().addEventListener("hold", this.showContext);
       }
@@ -41,10 +36,6 @@
       // Get mouse position
       var x = event.clientX;
       var y = event.clientY;
-      if (x === undefined) {
-        x = this.pointerX;
-        y = this.pointerY;
-      }
 
       // App.showContext
       this.props.showContext({
@@ -56,12 +47,6 @@
         itemKey: this.props.label,
         item: this.props.item
       });
-    },
-    stopPropagationSecondary: function (event) {
-      // HACK to not tap graph, deselect
-      if (event.buttons && event.buttons===2) {
-        event.stopPropagation();
-      }
     },
     getContext: function (menu, options) {
       return TheGraph.Menu({

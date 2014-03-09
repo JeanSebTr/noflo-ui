@@ -34795,7 +34795,7 @@ CreateGraph = (function(_super) {
   CreateGraph.prototype.normalizeProps = function(details) {
     if (details.type) {
       details.environment = {
-        runtime: details.type
+        type: details.type
       };
       delete details.type;
     }
@@ -37960,20 +37960,6 @@ function klayinit () {
     }
   };
 
-  // Working around hold event not having x y
-  // https://github.com/Polymer/PointerGestures/issues/23
-  TheGraph.mixins.SavePointer = {
-    componentDidMount: function () {
-      this.getDOMNode().addEventListener("pointerdown", this.savePointerPosition);
-    },
-    pointerX: 0,
-    pointerY: 0,
-    savePointerPosition: function (event) {
-      this.pointerX = event.clientX;
-      this.pointerY = event.clientY;
-    },
-  };  
-
   TheGraph.findMinMax = function (graph, nodes) {
     var inports, outports;
     if (nodes === undefined) {
@@ -38735,16 +38721,8 @@ context.TheGraph.FONT_AWESOME = {
       this.mouseY = Math.floor( this.props.height/2 );
 
       // HACK shiftKey global for taps https://github.com/Polymer/PointerGestures/issues/29
-      document.addEventListener('keydown', function (event) {
-        if (event.metaKey || event.ctrlKey) { 
-          TheGraph.metaKeyPressed = true; 
-        }
-      });
-      document.addEventListener('keyup', function (event) {
-        if (TheGraph.metaKeyPressed) { 
-          TheGraph.metaKeyPressed = false; 
-        }
-      });
+      document.addEventListener('keydown', this.keyDown);
+      document.addEventListener('keyup', this.keyUp);
 
       // Canvas background
       this.bgCanvas = unwrap(this.refs.canvas.getDOMNode());
@@ -38755,6 +38733,22 @@ context.TheGraph.FONT_AWESOME = {
       setTimeout(function () {
         this.renderGraph();
       }.bind(this), 500);
+    },
+    keyDown: function (event) {
+      // HACK shiftKey global for taps https://github.com/Polymer/PointerGestures/issues/29
+      if (event.metaKey || event.ctrlKey) { 
+        TheGraph.metaKeyPressed = true; 
+      }
+    },
+    keyUp: function (event) {
+      // Escape
+      if (event.keyCode===27) {
+        this.refs.graph.cancelPreviewEdge();
+      }
+      // HACK shiftKey global for taps https://github.com/Polymer/PointerGestures/issues/29
+      if (TheGraph.metaKeyPressed) { 
+        TheGraph.metaKeyPressed = false; 
+      }
     },
     unselectAll: function (event) {
       // No arguments = clear selection
@@ -38968,8 +38962,10 @@ context.TheGraph.FONT_AWESOME = {
     cancelPreviewEdge: function (event) {
       this.props.app.getDOMNode().removeEventListener("pointermove", this.renderPreviewEdge);
       this.props.app.getDOMNode().removeEventListener("tap", this.cancelPreviewEdge);
-      this.setState({edgePreview: null});
-      this.markDirty();
+      if (this.state.edgePreview) {
+        this.setState({edgePreview: null});
+        this.markDirty();
+      }
     },
     renderPreviewEdge: function (event) {
       var scale = this.props.app.state.scale;
@@ -39563,8 +39559,7 @@ context.TheGraph.FONT_AWESOME = {
   // Node view
   TheGraph.Node = React.createClass({
     mixins: [
-      TheGraph.mixins.Tooltip,
-      TheGraph.mixins.SavePointer
+      TheGraph.mixins.Tooltip
     ],
     componentDidMount: function () {
       // Dragging
@@ -39577,8 +39572,6 @@ context.TheGraph.FONT_AWESOME = {
 
       // Context menu
       if (this.props.showContext) {
-        this.getDOMNode().addEventListener("pointerdown", this.stopPropagation);
-        this.getDOMNode().addEventListener("pointerup", this.stopPropagation);
         this.getDOMNode().addEventListener("contextmenu", this.showContext);
         this.getDOMNode().addEventListener("hold", this.showContext);
       }
@@ -39673,12 +39666,6 @@ context.TheGraph.FONT_AWESOME = {
         this.props.graph.endTransaction('movenode');
       }
     },
-    stopPropagation: function (event) {
-      // HACK to keep context menu from cancelling preview edge
-      if (event.buttons && event.buttons===2) {
-        event.stopPropagation();
-      }
-    },
     showContext: function (event) {
       // Don't show native context menu
       event.preventDefault();
@@ -39690,10 +39677,6 @@ context.TheGraph.FONT_AWESOME = {
       // Get mouse position
       var x = event.clientX;
       var y = event.clientY;
-      if (x === undefined) {
-        x = this.pointerX;
-        y = this.pointerY;
-      }
 
       // App.showContext
       this.props.showContext({
@@ -40160,8 +40143,7 @@ context.TheGraph.FONT_AWESOME = {
 
   TheGraph.Port = React.createClass({
     mixins: [
-      TheGraph.mixins.Tooltip,
-      TheGraph.mixins.SavePointer
+      TheGraph.mixins.Tooltip
     ],
     componentDidMount: function () {
       // Preview edge start
@@ -40208,10 +40190,6 @@ context.TheGraph.FONT_AWESOME = {
       // Get mouse position
       var x = event.clientX;
       var y = event.clientY;
-      if (x === undefined) {
-        x = this.pointerX;
-        y = this.pointerY;
-      }
 
       // App.showContext
       this.props.showContext({
@@ -40322,8 +40300,7 @@ context.TheGraph.FONT_AWESOME = {
 
   TheGraph.Edge = React.createClass({
     mixins: [
-      TheGraph.mixins.Tooltip,
-      TheGraph.mixins.SavePointer
+      TheGraph.mixins.Tooltip
     ],
     componentWillMount: function() {
     },
@@ -40336,8 +40313,6 @@ context.TheGraph.FONT_AWESOME = {
 
       // Context menu
       if (this.props.showContext) {
-        this.getDOMNode().addEventListener("pointerdown", this.stopPropagationSecondary);
-        this.getDOMNode().addEventListener("pointerup", this.stopPropagationSecondary);
         this.getDOMNode().addEventListener("contextmenu", this.showContext);
         this.getDOMNode().addEventListener("hold", this.showContext);
       }
@@ -40349,23 +40324,12 @@ context.TheGraph.FONT_AWESOME = {
       var toggle = (TheGraph.metaKeyPressed || event.pointerType==="touch");
       this.props.onEdgeSelection(this.props.key, this.props.edge, toggle);
     },
-    stopPropagationSecondary: function (event) {
-      // HACK to not tap graph
-      if (event.buttons && event.buttons===2) {
-        event.stopPropagation();
-      }
-    },
     showContext: function (event) {
       // Don't show native context menu
       event.preventDefault();
 
       var x = event.clientX;
       var y = event.clientY;
-
-      if (x === undefined) {
-        x = this.pointerX;
-        y = this.pointerY;
-      }
 
       // App.showContext
       this.props.showContext({
@@ -40548,9 +40512,6 @@ context.TheGraph.FONT_AWESOME = {
   // Group view
 
   TheGraph.Group = React.createClass({
-    mixins: [
-      TheGraph.mixins.SavePointer
-    ],
     componentDidMount: function () {
       // Move group
       if (this.props.isSelectionGroup) {
@@ -40562,8 +40523,6 @@ context.TheGraph.FONT_AWESOME = {
 
       // Context menu
       if (this.props.showContext) {
-        this.getDOMNode().addEventListener("pointerdown", this.stopPropagationSecondary);
-        this.getDOMNode().addEventListener("pointerup", this.stopPropagationSecondary);
         this.getDOMNode().addEventListener("contextmenu", this.showContext);
         this.getDOMNode().addEventListener("hold", this.showContext);
       }
@@ -40582,10 +40541,6 @@ context.TheGraph.FONT_AWESOME = {
       // Get mouse position
       var x = event.clientX;
       var y = event.clientY;
-      if (x === undefined) {
-        x = this.pointerX;
-        y = this.pointerY;
-      }
 
       // App.showContext
       this.props.showContext({
@@ -40597,12 +40552,6 @@ context.TheGraph.FONT_AWESOME = {
         itemKey: this.props.label,
         item: this.props.item
       });
-    },
-    stopPropagationSecondary: function (event) {
-      // HACK to not tap graph, deselect
-      if (event.buttons && event.buttons===2) {
-        event.stopPropagation();
-      }
     },
     getContext: function (menu, options) {
       return TheGraph.Menu({
@@ -42175,6 +42124,7 @@ context.TheGraph.FONT_AWESOME = {
       edges: [],
       runtimes: [],
       component: '',
+      help: null,
       enteredView: function () {
         this.contextBar = this.$.context;
         window.addEventListener('keyup', function (e) {
@@ -42185,6 +42135,8 @@ context.TheGraph.FONT_AWESOME = {
 
         // Workaround for https://github.com/Polymer/PointerEvents/issues/134
         document.addEventListener('touchstart', function () {});
+
+        this.help = document.querySelector('noflo-help');
       },
       clearSelection: function () {
         var edge, node;
@@ -42287,6 +42239,11 @@ context.TheGraph.FONT_AWESOME = {
         if (this.graphs.length) {
           var graph = this.graphs[this.graphs.length - 1];
           this.fire('currentgraph', graph);
+          if (graph.nodes.length === 0 && this.graphs.length === 1) {
+            // Empty main graph, we should show the help text
+            this.showHelp(graph);
+          }
+
           if (!graph.properties.project) {
             window.setTimeout(function () {
               this.fire('example', graph);
@@ -42470,6 +42427,15 @@ context.TheGraph.FONT_AWESOME = {
           setTimeout(function () {
             currentGraph.endTransaction('subgraph');
           }, 5);
+        }.bind(this));
+      },
+      showHelp: function (graph) {
+        if (!this.help) {
+          return;
+        }
+        this.help.show('NoFlo Development Environment graph editor', 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner. Searching for <i>show library</i> will show all components.');
+        graph.once('addNode', function () {
+          this.help.close();
         }.bind(this));
       }
     });
@@ -42713,6 +42679,7 @@ context.TheGraph.FONT_AWESOME = {
       user: null,
       gridtoken: '',
       githubtoken: '',
+      theme: '',
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
       },
@@ -42722,7 +42689,8 @@ context.TheGraph.FONT_AWESOME = {
       send: function (event) {
         event.preventDefault();
         this.fire('updated', {
-          githubtoken: this.githubtoken
+          githubtoken: this.githubtoken,
+          theme: this.theme
         });
         this.close();
       },
@@ -42777,11 +42745,13 @@ context.TheGraph.FONT_AWESOME = {
         gridToken: '',
         githubToken: '',
         avatar: '',
+        theme: 'dark',
         storage: {
           grid: 'grid-token',
           github: 'github-token',
           user: 'grid-user',
-          avatar: 'grid-avatar'
+          avatar: 'grid-avatar',
+          theme: 'flowhub-theme'
         },
         help: null,
         login: function () {
@@ -42810,6 +42780,7 @@ context.TheGraph.FONT_AWESOME = {
           this.redirect = window.location.href;
           this.help = document.querySelector('noflo-help');
           this.checkLogin();
+          document.body.classList.add(this.theme);
         },
         checkLogin: function () {
           storage.get(this.storage.grid, function (token) {
@@ -42824,6 +42795,12 @@ context.TheGraph.FONT_AWESOME = {
               return;
             }
             this.githubToken = token;
+          }.bind(this));
+          storage.get(this.storage.theme, function (theme) {
+            if (!theme) {
+              return;
+            }
+            this.theme = theme;
           }.bind(this));
         },
         remoteLogin: function (responseUrl, cleanUp) {
@@ -42909,11 +42886,14 @@ context.TheGraph.FONT_AWESOME = {
         openSettings: function () {
           var dialog = document.createElement('noflo-account-settings');
           dialog.githubtoken = this.githubToken;
+          dialog.theme = this.theme;
           dialog.user = this.user;
           document.body.appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
             this.githubToken = event.detail.githubtoken;
+            this.theme = event.detail.theme;
             storage.set(this.storage.github, this.githubToken);
+            storage.set(this.storage.theme, this.theme);
           }.bind(this));
         },
         clearCache: function () {
@@ -42957,6 +42937,11 @@ context.TheGraph.FONT_AWESOME = {
         },
         githubTokenChanged: function () {
           this.fire('githubtoken', this.githubToken);
+        },
+        themeChanged: function (oldTheme, newTheme) {
+          this.fire('theme', this.theme);
+          document.body.classList.remove(oldTheme);
+          document.body.classList.add(newTheme);
         }
       });
     })();
@@ -43053,6 +43038,11 @@ context.TheGraph.FONT_AWESOME = {
         }.bind(this));
         this.$.mainaccount.addEventListener('login', function (event) {
           this.fetchFlowhub();
+        }.bind(this));
+        this.$.mainaccount.addEventListener('theme', function (event) {
+          window.setTimeout(function () {
+            this.fire('theme', event.detail);
+          }.bind(this), 1000);
         }.bind(this));
         this.registry = require('flowhub-registry');
         this.help = document.querySelector('noflo-help');
@@ -50278,7 +50268,7 @@ CodeMirror.defineMIME("text/html", "htmlmixed");
           lineNumbers: true,
           value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
-          theme: 'noflo'
+          theme: 'mdn-like'
         });
         this.previewEditor.setSize(576, 144);
         this.previewEditor.on('change', function () {
@@ -57750,6 +57740,7 @@ CodeMirror.defineMIME("text/x-coffeescript", "coffeescript");
       height: null,
       codeEditor: null,
       testsEditor: null,
+      theme: 'dark',
       componentChanged: function () {
         if (!this.component || !this.component.id) {
           this.style.display = 'none';
@@ -57761,7 +57752,7 @@ CodeMirror.defineMIME("text/x-coffeescript", "coffeescript");
           lineNumbers: true,
           value: this.component.code || '',
           language: this.component.language,
-          theme: 'noflo'
+          theme: this.getMirrorTheme()
         });
         this.codeEditor.on('change', function () {
           this.component.code = this.codeEditor.getValue();
@@ -57772,7 +57763,7 @@ CodeMirror.defineMIME("text/x-coffeescript", "coffeescript");
           lineNumbers: true,
           value: this.component.tests || '',
           language: this.component.language,
-          theme: 'noflo'
+          theme: this.getMirrorTheme()
         });
         this.testsEditor.on('change', function () {
           this.component.tests = this.testsEditor.getValue();
@@ -57786,6 +57777,19 @@ CodeMirror.defineMIME("text/x-coffeescript", "coffeescript");
       },
       heightChanged: function () {
         this.setSize();
+      },
+      getMirrorTheme: function () {
+        if (this.theme === 'light') {
+          return 'mdn-like';
+        }
+        return 'noflo';
+      },
+      themeChanged: function () {
+        if (!this.codeEditor || !this.testsEditor) {
+          return;
+        }
+        this.codeEditor.setOption('theme', this.getMirrorTheme());
+        this.testsEditor.setOption('theme', this.getMirrorTheme());
       },
       setSize: function () {
         if (!this.codeEditor || !this.testsEditor || !this.width || !this.height) {
