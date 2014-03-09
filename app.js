@@ -37507,7 +37507,9 @@ require.alias("gjohnson-uuid/index.js", "noflo-ui/deps/uuid/index.js");
 require.alias("gjohnson-uuid/index.js", "uuid/index.js");
 
 require.alias("noflo-ui/index.js", "noflo-ui/index.js");;
-window.addEventListener('WebComponentsReady', function() { 
+window.addEventListener('polymer-ready', function() {
+  document.body.classList.remove('loading');
+
   var noflo = require('noflo');
   var graphs = {};
   var fbps = Array.prototype.slice.call(document.querySelectorAll('script[type="application/fbp"]'));
