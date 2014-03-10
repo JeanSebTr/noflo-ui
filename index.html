@@ -61,7 +61,7 @@
 
 <!-- <link rel="import" href="../polymer-dev/polymer.html"> -->
 
-<polymer-element name="the-graph" attributes="graph menus library width height autolayout theme selectedNodes selectedEdges getMenuDef" assetpath="bower_components/the-graph/the-graph/">
+<polymer-element name="the-graph" attributes="graph menus library width height autolayout theme selectedNodes selectedEdges getMenuDef pan scale" assetpath="bower_components/the-graph/the-graph/">
 
   <template>
     <style>.the-graph-dark .the-graph-app {
@@ -99,10 +99,6 @@
   stroke: #666;
   stroke-width: 2px;
 }
-.the-graph-dark .small .node-border {
-  fill: rgba(230,238,240,0.94);
-  stroke: none;
-}
 .the-graph-dark .node-rect {
   fill: rgba(230,238,240,0.94);
   stroke: none;
@@ -130,6 +126,10 @@
 .the-graph-dark .ex-outports .node:hover .node-rect {
   fill: none;
 }
+.the-graph-dark .small .node-border {
+  fill: rgba(230,238,240,0.94);
+  stroke: none;
+}
 .the-graph-dark .small .ex-inports .node .node-border,
 .the-graph-dark .small .ex-outports .node .node-border {
   fill: #1a1a1a;
@@ -137,13 +137,43 @@
 .the-graph-dark .node-bg {
   opacity: 0;
 }
-.the-graph-dark .node.selected .node-border {
-  stroke: #f00;
-  stroke-width: 4px;
+.the-graph-dark .graph.selection .node .node-rect {
+  fill: rgba(61,66,67,0.94);
 }
-.the-graph-dark .node.selected .port-arc {
-  stroke: #f00;
-  fill: #f00;
+.the-graph-dark .graph.selection .node .node-border {
+  stroke: #232829;
+}
+.the-graph-dark .graph.selection .node .port-arc {
+  fill: #232829;
+}
+.the-graph-dark .graph.selection .node .node-icon {
+  fill: #232829;
+}
+.the-graph-dark .graph.selection .node.selected .node-rect {
+  fill: rgba(230,238,240,0.94);
+}
+.the-graph-dark .graph.selection .node.selected .node-border {
+  stroke: #808080;
+}
+.the-graph-dark .graph.selection .node.selected .port-arc {
+  fill: #808080;
+}
+.the-graph-dark .graph.selection .node.selected .node-icon {
+  fill: #5e6a6e;
+}
+.the-graph-dark .small .graph.selection .node .node-rect {
+  fill: none;
+}
+.the-graph-dark .small .graph.selection .node .node-border {
+  fill: rgba(61,66,67,0.94);
+  stroke: none;
+}
+.the-graph-dark .small .graph.selection .node.selected .node-rect {
+  fill: none;
+}
+.the-graph-dark .small .graph.selection .node.selected .node-border {
+  fill: rgba(230,238,240,0.94);
+  stroke: none;
 }
 .the-graph-dark path {
   fill: none;
@@ -167,7 +197,7 @@
 }
 .the-graph-dark .edge.selected .edge-bg {
   stroke-width: 8px;
-  stroke: #f00;
+  stroke: #e6e6e6;
 }
 .the-graph-dark .small .edge-bg {
   stroke-width: 8px;
@@ -447,13 +477,46 @@
 .the-graph-dark .group-box.color10:hover {
   fill: rgba(255,128,181,0.25);
 }
-.the-graph-dark .group-box.selection {
-  fill: rgba(255,102,102,0.15);
-  stroke: #f00;
+.the-graph-dark .selection .group-box.color0 {
+  fill: rgba(191,191,191,0.1);
+}
+.the-graph-dark .selection .group-box.color1 {
+  fill: rgba(255,128,128,0.1);
+}
+.the-graph-dark .selection .group-box.color2 {
+  fill: rgba(255,202,128,0.1);
+}
+.the-graph-dark .selection .group-box.color3 {
+  fill: rgba(255,255,128,0.1);
+}
+.the-graph-dark .selection .group-box.color4 {
+  fill: rgba(128,255,159,0.1);
+}
+.the-graph-dark .selection .group-box.color5 {
+  fill: rgba(128,255,212,0.1);
+}
+.the-graph-dark .selection .group-box.color6 {
+  fill: rgba(128,244,255,0.1);
+}
+.the-graph-dark .selection .group-box.color7 {
+  fill: rgba(128,191,255,0.1);
+}
+.the-graph-dark .selection .group-box.color8 {
+  fill: rgba(223,128,255,0.1);
+}
+.the-graph-dark .selection .group-box.color9 {
+  fill: rgba(255,128,234,0.1);
+}
+.the-graph-dark .selection .group-box.color10 {
+  fill: rgba(255,128,181,0.1);
+}
+.the-graph-dark .selection .group-box.selection {
+  fill: rgba(255,255,255,0.15);
+  stroke: #e6e6e6;
   stroke-width: 1px;
 }
-.the-graph-dark .group-box.selection:hover {
-  fill: rgba(255,102,102,0.25);
+.the-graph-dark .selection .group-box.selection:hover {
+  fill: rgba(255,255,255,0.25);
 }
 .the-graph-dark .group-label {
   text-anchor: start;
@@ -475,38 +538,82 @@
 .the-graph-dark .small .group-description {
   visibility: hidden;
 }
-.the-graph-dark .stroke.route0 {
+.the-graph-dark .stroke.route0,
+.the-graph-dark .selection .selected .stroke.route0 {
   stroke: #fff;
 }
-.the-graph-dark .stroke.route1 {
+.the-graph-dark .stroke.route1,
+.the-graph-dark .selection .selected .stroke.route1 {
   stroke: #e80202;
 }
-.the-graph-dark .stroke.route2 {
+.the-graph-dark .stroke.route2,
+.the-graph-dark .selection .selected .stroke.route2 {
   stroke: #e88802;
 }
-.the-graph-dark .stroke.route3 {
+.the-graph-dark .stroke.route3,
+.the-graph-dark .selection .selected .stroke.route3 {
   stroke: #e8e802;
 }
-.the-graph-dark .stroke.route4 {
+.the-graph-dark .stroke.route4,
+.the-graph-dark .selection .selected .stroke.route4 {
   stroke: #02e83c;
 }
-.the-graph-dark .stroke.route5 {
+.the-graph-dark .stroke.route5,
+.the-graph-dark .selection .selected .stroke.route5 {
   stroke: #02e89c;
 }
-.the-graph-dark .stroke.route6 {
+.the-graph-dark .stroke.route6,
+.the-graph-dark .selection .selected .stroke.route6 {
   stroke: #02d5e8;
 }
-.the-graph-dark .stroke.route7 {
+.the-graph-dark .stroke.route7,
+.the-graph-dark .selection .selected .stroke.route7 {
   stroke: #0275e8;
 }
-.the-graph-dark .stroke.route8 {
+.the-graph-dark .stroke.route8,
+.the-graph-dark .selection .selected .stroke.route8 {
   stroke: #af02e8;
 }
-.the-graph-dark .stroke.route9 {
+.the-graph-dark .stroke.route9,
+.the-graph-dark .selection .selected .stroke.route9 {
   stroke: #e802c2;
 }
-.the-graph-dark .stroke.route10 {
+.the-graph-dark .stroke.route10,
+.the-graph-dark .selection .selected .stroke.route10 {
   stroke: #e80262;
+}
+.the-graph-dark .selection .stroke.route0 {
+  stroke: #757575;
+}
+.the-graph-dark .selection .stroke.route1 {
+  stroke: #510101;
+}
+.the-graph-dark .selection .stroke.route2 {
+  stroke: #512f01;
+}
+.the-graph-dark .selection .stroke.route3 {
+  stroke: #515101;
+}
+.the-graph-dark .selection .stroke.route4 {
+  stroke: #015115;
+}
+.the-graph-dark .selection .stroke.route5 {
+  stroke: #015136;
+}
+.the-graph-dark .selection .stroke.route6 {
+  stroke: #014a51;
+}
+.the-graph-dark .selection .stroke.route7 {
+  stroke: #012951;
+}
+.the-graph-dark .selection .stroke.route8 {
+  stroke: #3d0151;
+}
+.the-graph-dark .selection .stroke.route9 {
+  stroke: #510143;
+}
+.the-graph-dark .selection .stroke.route10 {
+  stroke: #510122;
 }
 .the-graph-dark .fill.route0 {
   fill: #fff;
@@ -577,10 +684,6 @@
   stroke: #3b4245;
   stroke-width: 2px;
 }
-.the-graph-light .small .node-border {
-  fill: rgba(230,238,240,0.94);
-  stroke: none;
-}
 .the-graph-light .node-rect {
   fill: rgba(230,238,240,0.94);
   stroke: none;
@@ -608,6 +711,10 @@
 .the-graph-light .ex-outports .node:hover .node-rect {
   fill: none;
 }
+.the-graph-light .small .node-border {
+  fill: rgba(230,238,240,0.94);
+  stroke: none;
+}
 .the-graph-light .small .ex-inports .node .node-border,
 .the-graph-light .small .ex-outports .node .node-border {
   fill: #e6e6e6;
@@ -615,13 +722,43 @@
 .the-graph-light .node-bg {
   opacity: 0;
 }
-.the-graph-light .node.selected .node-border {
-  stroke: #f00;
-  stroke-width: 4px;
+.the-graph-light .graph.selection .node .node-rect {
+  fill: rgba(245,248,249,0.94);
 }
-.the-graph-light .node.selected .port-arc {
-  stroke: #f00;
-  fill: #f00;
+.the-graph-light .graph.selection .node .node-border {
+  stroke: #d6dadc;
+}
+.the-graph-light .graph.selection .node .port-arc {
+  fill: #d6dadc;
+}
+.the-graph-light .graph.selection .node .node-icon {
+  fill: #bac2c4;
+}
+.the-graph-light .graph.selection .node.selected .node-rect {
+  fill: rgba(230,238,240,0.94);
+}
+.the-graph-light .graph.selection .node.selected .node-border {
+  stroke: #808080;
+}
+.the-graph-light .graph.selection .node.selected .port-arc {
+  fill: #808080;
+}
+.the-graph-light .graph.selection .node.selected .node-icon {
+  fill: #2f3537;
+}
+.the-graph-light .small .graph.selection .node .node-rect {
+  fill: none;
+}
+.the-graph-light .small .graph.selection .node .node-border {
+  fill: rgba(245,248,249,0.94);
+  stroke: none;
+}
+.the-graph-light .small .graph.selection .node.selected .node-rect {
+  fill: none;
+}
+.the-graph-light .small .graph.selection .node.selected .node-border {
+  fill: rgba(230,238,240,0.94);
+  stroke: none;
 }
 .the-graph-light path {
   fill: none;
@@ -631,7 +768,7 @@
   stroke-width: 6px;
 }
 .the-graph-light .edge-fg {
-  stroke: #a0a5a9;
+  stroke: #bfbfbf;
   stroke-width: 4px;
   transition-property: stroke-width;
   transition-duration: 0.5s;
@@ -645,7 +782,7 @@
 }
 .the-graph-light .edge.selected .edge-bg {
   stroke-width: 10px;
-  stroke: #f00;
+  stroke: #808080;
 }
 .the-graph-light .small .edge-bg {
   stroke-width: 10px;
@@ -683,7 +820,7 @@
 }
 .the-graph-light .iip-path {
   stroke-width: 1px;
-  stroke: #a0a5a9;
+  stroke: #bfbfbf;
 }
 .the-graph-light .iip-info {
   visibility: hidden;
@@ -799,11 +936,11 @@
 }
 .the-graph-light .ex-inports .node-icon,
 .the-graph-light .small .ex-inports .node-icon {
-  fill: #ee7c0e;
+  fill: #cc6300;
 }
 .the-graph-light .ex-outports .node-icon,
 .the-graph-light .small .ex-outports .node-icon {
-  fill: #00782a;
+  fill: #00cc3d;
 }
 .the-graph-light .port-circle-bg {
   fill: #3b4245;
@@ -838,100 +975,133 @@
   visibility: hidden;
 }
 .the-graph-light .group-box {
-  fill: rgba(191,191,191,0.25);
+  fill: rgba(191,191,191,0.1);
   transition-property: fill;
   transition-duration: 0.3s;
 }
 .the-graph-light .group-box:hover {
-  fill: rgba(191,191,191,0.35);
+  fill: rgba(191,191,191,0.15);
 }
 .the-graph-light .small .group-box {
   stroke-width: 8px;
 }
 .the-graph-light .group-box.color0 {
-  fill: rgba(191,191,191,0.25);
-  stroke: var-group00-stroke;
+  fill: rgba(191,191,191,0.1);
+  stroke: rgba(191,191,191,0.15);
 }
 .the-graph-light .group-box.color1 {
-  fill: rgba(223,159,159,0.25);
-  stroke: var-group01-stroke;
+  fill: rgba(204,0,0,0.1);
+  stroke: rgba(204,0,0,0.15);
 }
 .the-graph-light .group-box.color2 {
-  fill: rgba(223,197,159,0.25);
-  stroke: var-group02-stroke;
+  fill: rgba(204,99,0,0.1);
+  stroke: rgba(204,99,0,0.15);
 }
 .the-graph-light .group-box.color3 {
-  fill: rgba(223,223,159,0.25);
-  stroke: var-group03-stroke;
+  fill: rgba(255,200,0,0.1);
+  stroke: rgba(255,200,0,0.15);
 }
 .the-graph-light .group-box.color4 {
-  fill: rgba(159,223,175,0.25);
-  stroke: var-group04-stroke;
+  fill: rgba(0,204,61,0.1);
+  stroke: rgba(0,204,61,0.15);
 }
 .the-graph-light .group-box.color5 {
-  fill: rgba(159,223,202,0.25);
-  stroke: var-group05-stroke;
+  fill: rgba(171,242,218,0.1);
+  stroke: rgba(171,242,218,0.15);
 }
 .the-graph-light .group-box.color6 {
-  fill: rgba(159,218,223,0.25);
-  stroke: var-group06-stroke;
+  fill: rgba(0,201,204,0.1);
+  stroke: rgba(0,201,204,0.15);
 }
 .the-graph-light .group-box.color7 {
-  fill: rgba(159,191,223,0.25);
-  stroke: var-group07-stroke;
+  fill: rgba(0,82,204,0.1);
+  stroke: rgba(0,82,204,0.15);
 }
 .the-graph-light .group-box.color8 {
-  fill: rgba(207,159,223,0.25);
-  stroke: var-group08-stroke;
+  fill: rgba(68,0,204,0.1);
+  stroke: rgba(68,0,204,0.15);
 }
 .the-graph-light .group-box.color9 {
-  fill: rgba(223,159,212,0.25);
-  stroke: var-group09-stroke;
+  fill: rgba(255,168,186,0.1);
+  stroke: rgba(255,168,186,0.15);
 }
 .the-graph-light .group-box.color10 {
-  fill: rgba(223,159,186,0.25);
-  stroke: var-group10-stroke;
+  fill: rgba(204,0,109,0.1);
+  stroke: rgba(204,0,109,0.15);
 }
 .the-graph-light .group-box.color0:hover {
-  fill: rgba(191,191,191,0.35);
+  fill: rgba(191,191,191,0.15);
 }
 .the-graph-light .group-box.color1:hover {
-  fill: rgba(223,159,159,0.35);
+  fill: rgba(204,0,0,0.15);
 }
 .the-graph-light .group-box.color2:hover {
-  fill: rgba(223,197,159,0.35);
+  fill: rgba(204,99,0,0.15);
 }
 .the-graph-light .group-box.color3:hover {
-  fill: rgba(223,223,159,0.35);
+  fill: rgba(255,200,0,0.15);
 }
 .the-graph-light .group-box.color4:hover {
-  fill: rgba(159,223,175,0.35);
+  fill: rgba(0,204,61,0.15);
 }
 .the-graph-light .group-box.color5:hover {
-  fill: rgba(159,223,202,0.35);
+  fill: rgba(171,242,218,0.15);
 }
 .the-graph-light .group-box.color6:hover {
-  fill: rgba(159,218,223,0.35);
+  fill: rgba(0,201,204,0.15);
 }
 .the-graph-light .group-box.color7:hover {
-  fill: rgba(159,191,223,0.35);
+  fill: rgba(0,82,204,0.15);
 }
 .the-graph-light .group-box.color8:hover {
-  fill: rgba(207,159,223,0.35);
+  fill: rgba(68,0,204,0.15);
 }
 .the-graph-light .group-box.color9:hover {
-  fill: rgba(223,159,212,0.35);
+  fill: rgba(255,168,186,0.15);
 }
 .the-graph-light .group-box.color10:hover {
-  fill: rgba(223,159,186,0.35);
+  fill: rgba(204,0,109,0.15);
 }
-.the-graph-light .group-box.selection {
-  fill: rgba(255,102,102,0.15);
-  stroke: #f00;
+.the-graph-light .selection .group-box.color0 {
+  fill: rgba(191,191,191,0.05);
+}
+.the-graph-light .selection .group-box.color1 {
+  fill: rgba(204,0,0,0.05);
+}
+.the-graph-light .selection .group-box.color2 {
+  fill: rgba(204,99,0,0.05);
+}
+.the-graph-light .selection .group-box.color3 {
+  fill: rgba(255,200,0,0.05);
+}
+.the-graph-light .selection .group-box.color4 {
+  fill: rgba(0,204,61,0.05);
+}
+.the-graph-light .selection .group-box.color5 {
+  fill: rgba(171,242,218,0.05);
+}
+.the-graph-light .selection .group-box.color6 {
+  fill: rgba(0,201,204,0.05);
+}
+.the-graph-light .selection .group-box.color7 {
+  fill: rgba(0,82,204,0.05);
+}
+.the-graph-light .selection .group-box.color8 {
+  fill: rgba(68,0,204,0.05);
+}
+.the-graph-light .selection .group-box.color9 {
+  fill: rgba(255,168,186,0.05);
+}
+.the-graph-light .selection .group-box.color10 {
+  fill: rgba(204,0,109,0.05);
+}
+.the-graph-light .selection .group-box.selection {
+  fill: rgba(128,128,128,0.15);
+  stroke: #808080;
   stroke-width: 1px;
 }
-.the-graph-light .group-box.selection:hover {
-  fill: rgba(255,102,102,0.25);
+.the-graph-light .selection .group-box.selection:hover {
+  fill: rgba(102,102,102,0.25);
 }
 .the-graph-light .group-label {
   text-anchor: start;
@@ -953,71 +1123,115 @@
 .the-graph-light .small .group-description {
   visibility: hidden;
 }
-.the-graph-light .stroke.route0 {
-  stroke: #a0a5a9;
+.the-graph-light .stroke.route0,
+.the-graph-light .selection .selected .stroke.route0 {
+  stroke: #bfbfbf;
 }
-.the-graph-light .stroke.route1 {
-  stroke: #e32017;
+.the-graph-light .stroke.route1,
+.the-graph-light .selection .selected .stroke.route1 {
+  stroke: #c00;
 }
-.the-graph-light .stroke.route2 {
-  stroke: #ee7c0e;
+.the-graph-light .stroke.route2,
+.the-graph-light .selection .selected .stroke.route2 {
+  stroke: #cc6300;
 }
-.the-graph-light .stroke.route3 {
-  stroke: #ffd300;
+.the-graph-light .stroke.route3,
+.the-graph-light .selection .selected .stroke.route3 {
+  stroke: #ffc800;
 }
-.the-graph-light .stroke.route4 {
-  stroke: #00782a;
+.the-graph-light .stroke.route4,
+.the-graph-light .selection .selected .stroke.route4 {
+  stroke: #00cc3d;
 }
-.the-graph-light .stroke.route5 {
-  stroke: #95cdba;
+.the-graph-light .stroke.route5,
+.the-graph-light .selection .selected .stroke.route5 {
+  stroke: #abf2da;
 }
-.the-graph-light .stroke.route6 {
-  stroke: #0098d4;
+.the-graph-light .stroke.route6,
+.the-graph-light .selection .selected .stroke.route6 {
+  stroke: #00c9cc;
 }
-.the-graph-light .stroke.route7 {
-  stroke: #003688;
+.the-graph-light .stroke.route7,
+.the-graph-light .selection .selected .stroke.route7 {
+  stroke: #0052cc;
 }
-.the-graph-light .stroke.route8 {
-  stroke: #9b0056;
+.the-graph-light .stroke.route8,
+.the-graph-light .selection .selected .stroke.route8 {
+  stroke: #40c;
 }
-.the-graph-light .stroke.route9 {
-  stroke: #f3a9bb;
+.the-graph-light .stroke.route9,
+.the-graph-light .selection .selected .stroke.route9 {
+  stroke: #ffa8ba;
 }
-.the-graph-light .stroke.route10 {
-  stroke: #b36305;
+.the-graph-light .stroke.route10,
+.the-graph-light .selection .selected .stroke.route10 {
+  stroke: #cc006d;
+}
+.the-graph-light .selection .stroke.route0 {
+  stroke: #e6e6e6;
+}
+.the-graph-light .selection .stroke.route1 {
+  stroke: #fcc;
+}
+.the-graph-light .selection .stroke.route2 {
+  stroke: #ffe5cc;
+}
+.the-graph-light .selection .stroke.route3 {
+  stroke: #fff4cc;
+}
+.the-graph-light .selection .stroke.route4 {
+  stroke: #ccffdb;
+}
+.the-graph-light .selection .stroke.route5 {
+  stroke: #d3f8ec;
+}
+.the-graph-light .selection .stroke.route6 {
+  stroke: #ccfeff;
+}
+.the-graph-light .selection .stroke.route7 {
+  stroke: #cce0ff;
+}
+.the-graph-light .selection .stroke.route8 {
+  stroke: #dcf;
+}
+.the-graph-light .selection .stroke.route9 {
+  stroke: #ffccd6;
+}
+.the-graph-light .selection .stroke.route10 {
+  stroke: #ffcce7;
 }
 .the-graph-light .fill.route0 {
-  fill: #a0a5a9;
+  fill: #bfbfbf;
 }
 .the-graph-light .fill.route1 {
-  fill: #e32017;
+  fill: #c00;
 }
 .the-graph-light .fill.route2 {
-  fill: #ee7c0e;
+  fill: #cc6300;
 }
 .the-graph-light .fill.route3 {
-  fill: #ffd300;
+  fill: #ffc800;
 }
 .the-graph-light .fill.route4 {
-  fill: #00782a;
+  fill: #00cc3d;
 }
 .the-graph-light .fill.route5 {
-  fill: #95cdba;
+  fill: #abf2da;
 }
 .the-graph-light .fill.route6 {
-  fill: #0098d4;
+  fill: #00c9cc;
 }
 .the-graph-light .fill.route7 {
-  fill: #003688;
+  fill: #0052cc;
 }
 .the-graph-light .fill.route8 {
-  fill: #9b0056;
+  fill: #40c;
 }
 .the-graph-light .fill.route9 {
-  fill: #f3a9bb;
+  fill: #ffa8ba;
 }
 .the-graph-light .fill.route10 {
-  fill: #b36305;
+  fill: #cc006d;
 }
 </style>
     <div id="svgcontainer"></div>
@@ -1043,12 +1257,61 @@
   
 </polymer-element>
 
+<polymer-element name="the-graph-thumb" attributes="graph width height thumbscale thumbrectangle viewrectangle hide" assetpath="bower_components/the-graph/the-graph-thumb/">
+  <template>
+    <canvas id="canvas" width="{{width}}" height="{{height}}" style="position:absolute;top:0;left:0;"></canvas>
+    <canvas id="canvas2" width="{{width}}" height="{{height}}" style="position:absolute;top:0;left:0;"></canvas>
+  </template>
+  
+</polymer-element>
 
-<!-- <link rel="import" href="../the-graph-nav/the-graph-nav.html"> -->
+
+
+<polymer-element name="the-graph-map" attributes="graph width height pan scale viewwidth viewheight hide" touch-action="none" assetpath="bower_components/the-graph/the-graph-nav/">
+  <style>
+    #thumb {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: hsla(0, 0%, 0%, 0.9);
+      overflow: visible;
+    }
+    #viewrect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 150px;
+      border: 1px solid hsla(190, 100%, 80%, 0.4);
+      border-style: dotted;
+    }
+  </style>
+  <template>
+    <the-graph-thumb id="thumb" graph="{{graph}}" thumbrectangle="{{thumbrectangle}}" viewrectangle="{{scaledviewrectangle}}" width="{{width}}" height="{{height}}" hide="{{hide}}"></the-graph-thumb>
+    <div id="viewrect"></div>
+  </template>
+  
+</polymer-element>
+
+
+
+<polymer-element name="the-graph-nav" attributes="graph scale pan width height viewwidth viewheight" assetpath="bower_components/the-graph/the-graph-nav/">
+  <template>
+    <the-graph-map id="map" graph="{{graph}}" scale="{{scale}}" pan="{{pan}}" viewwidth="{{viewwidth}}" viewheight="{{viewheight}}" width="{{width}}" height="{{height}}"></the-graph-map>
+    <!-- TODO: fit button -->
+  </template>
+  
+</polymer-element>
+
+
+
 
 <polymer-element name="the-graph-editor" attributes="grid snap width height autolayout theme selectedNodes selectedEdges onContextMenu" touch-action="none" assetpath="bower_components/the-graph/the-graph-editor/">
   <template>
-    <the-graph id="graph" name="{{ graph.properties.name }}" graph="{{nofloGraph}}" menus="{{menus}}" width="{{width}}" height="{{height}}" autolayout="{{autolayout}}" theme="{{theme}}" selectednodes="{{selectedNodes}}" selectededges="{{selectedEdges}}" getmenudef="{{getMenuDef}}"></the-graph>
+    <the-graph id="graph" name="{{ graph.properties.name }}" graph="{{nofloGraph}}" menus="{{menus}}" width="{{width}}" height="{{height}}" pan="{{pan}}" scale="{{scale}}" autolayout="{{autolayout}}" theme="{{theme}}" selectednodes="{{selectedNodes}}" selectededges="{{selectedEdges}}" getmenudef="{{getMenuDef}}">
+    </the-graph>
+    <the-graph-nav id="nav" graph="{{nofloGraph}}" width="216" height="162" viewwidth="{{width}}" viewheight="{{height}}" pan="{{pan}}" scale="{{scale}}" style="position:absolute; right:0px; bottom:0px;">
+    </the-graph-nav>
   </template>
   
 </polymer-element>
@@ -1556,13 +1819,6 @@
   
 </polymer-element>
 
-<polymer-element name="the-graph-thumb" attributes="graph width height thumbscale thumbrectangle" assetpath="bower_components/the-graph/the-graph-thumb/">
-  <template>
-    <canvas id="canvas" width="{{width}}" height="{{height}}"></canvas>
-  </template>
-  
-</polymer-element>
-
 <polymer-element name="noflo-account-settings" attributes="user gridtoken githubtoken theme" class="modal-content" assetpath="elements/">
   <template>
     <h1>Account settings for {{ user.name }}</h1>
@@ -1786,6 +2042,8 @@
       overflow-y: scroll;
       text-align: left;
       margin-bottom: 0px;
+      -webkit-user-select: initial;
+      user-select: initial;
     }
     the-card[type="noflo-runtime-preview"] #preview-iframe {
       margin-top: 25px;

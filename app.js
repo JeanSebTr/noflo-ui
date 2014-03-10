@@ -20833,6 +20833,9 @@ InternalSocket = (function(_super) {
   };
 
   InternalSocket.prototype.endGroup = function() {
+    if (!this.groups.length) {
+      return;
+    }
     return this.emit('endgroup', this.groups.pop());
   };
 
@@ -22792,9 +22795,10 @@ Network = (function(_super) {
     if (!node.component.isReady()) {
       node.component.once('ready', (function(_this) {
         return function() {
-          _this.subscribeSubgraph(node);
+          return _this.subscribeSubgraph(node);
         };
       })(this));
+      return;
     }
     if (!node.component.network) {
       return;
@@ -22811,9 +22815,9 @@ Network = (function(_super) {
           data = {};
         }
         if (data.subgraph) {
-          data.subgraph = "" + node.id + ":" + data.subgraph;
+          data.subgraph = data.subgraph.unshift(node.id);
         } else {
-          data.subgraph = node.id;
+          data.subgraph = [node.id];
         }
         return _this.emit(type, data);
       };
@@ -28472,7 +28476,7 @@ require.register("noflo-noflo-groups/index.js", function(exports, require, modul
 
 });
 require.register("noflo-noflo-groups/component.json", function(exports, require, module){
-module.exports = JSON.parse('{"name":"noflo-groups","description":"Group Utilities for NoFlo","keywords":["noflo","groups","utilities"],"author":"Kenneth Kan <kenhkan@gmail.com>","version":"0.1.0","repo":"kenhkan/groups","dependencies":{"component/underscore":"*","noflo/noflo":"*"},"scripts":["components/ReadGroups.coffee","components/RemoveGroups.coffee","components/Regroup.coffee","components/Group.coffee","components/GroupZip.coffee","components/FilterByGroup.coffee","components/Objectify.coffee","components/ReadGroup.coffee","components/SendByGroup.coffee","components/CollectGroups.coffee","components/CollectObject.coffee","components/FirstGroup.coffee","components/MapGroup.coffee","components/MergeGroups.coffee","components/GroupByObjectKey.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"tags","components":{"ReadGroups":"components/ReadGroups.coffee","RemoveGroups":"components/RemoveGroups.coffee","Regroup":"components/Regroup.coffee","Group":"components/Group.coffee","GroupZip":"components/GroupZip.coffee","FilterByGroup":"components/FilterByGroup.coffee","Objectify":"components/Objectify.coffee","ReadGroup":"components/ReadGroup.coffee","SendByGroup":"components/SendByGroup.coffee","CollectGroups":"components/CollectGroups.coffee","CollectObject":"components/CollectObject.coffee","FirstGroup":"components/FirstGroup.coffee","MapGroup":"components/MapGroup.coffee","MergeGroups":"components/MergeGroups.coffee","GroupByObjectKey":"components/GroupByObjectKey.coffee"}}}');
+module.exports = JSON.parse('{"name":"noflo-groups","description":"Group Utilities for NoFlo","keywords":["noflo","groups","utilities"],"author":"Kenneth Kan <kenhkan@gmail.com>","version":"0.1.0","repo":"kenhkan/groups","dependencies":{"component/underscore":"*","noflo/noflo":"*"},"scripts":["components/ReadGroups.coffee","components/RemoveGroups.coffee","components/Regroup.coffee","components/Group.coffee","components/GroupZip.coffee","components/FilterByGroup.coffee","components/Objectify.coffee","components/ReadGroup.coffee","components/SendByGroup.coffee","components/CollectGroups.coffee","components/CollectObject.coffee","components/CollectTree.coffee","components/FirstGroup.coffee","components/MapGroup.coffee","components/MergeGroups.coffee","components/GroupByObjectKey.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"tags","components":{"ReadGroups":"components/ReadGroups.coffee","RemoveGroups":"components/RemoveGroups.coffee","Regroup":"components/Regroup.coffee","Group":"components/Group.coffee","GroupZip":"components/GroupZip.coffee","FilterByGroup":"components/FilterByGroup.coffee","Objectify":"components/Objectify.coffee","ReadGroup":"components/ReadGroup.coffee","SendByGroup":"components/SendByGroup.coffee","CollectGroups":"components/CollectGroups.coffee","CollectObject":"components/CollectObject.coffee","CollectTree":"components/CollectTree.coffee","FirstGroup":"components/FirstGroup.coffee","MapGroup":"components/MapGroup.coffee","MergeGroups":"components/MergeGroups.coffee","GroupByObjectKey":"components/GroupByObjectKey.coffee"}}}');
 });
 require.register("noflo-noflo-groups/components/ReadGroups.js", function(exports, require, module){
 var ReadGroups, noflo, _,
@@ -28711,14 +28715,17 @@ noflo = require("noflo");
 Group = (function(_super) {
   __extends(Group, _super);
 
+  Group.prototype.description = 'Add groups to a packet';
+
   function Group() {
     this.newGroups = [];
     this.inPorts = {
-      "in": new noflo.Port,
-      group: new noflo.Port
+      "in": new noflo.Port('all'),
+      group: new noflo.Port('string'),
+      clear: new noflo.Port('bang')
     };
     this.outPorts = {
-      out: new noflo.Port
+      out: new noflo.Port('all')
     };
     this.inPorts["in"].on("connect", (function(_this) {
       return function() {
@@ -29431,6 +29438,102 @@ CollectObject = (function(_super) {
 
 exports.getComponent = function() {
   return new CollectObject;
+};
+
+});
+require.register("noflo-noflo-groups/components/CollectTree.js", function(exports, require, module){
+var CollectTree, noflo,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+noflo = require('noflo');
+
+CollectTree = (function(_super) {
+  __extends(CollectTree, _super);
+
+  CollectTree.prototype.description = 'Collect grouped packets into a simple tree structure and send on disconnect';
+
+  function CollectTree() {
+    this.data = null;
+    this.groups = [];
+    this.inPorts = {
+      "in": new noflo.Port('all')
+    };
+    this.outPorts = {
+      out: new noflo.Port('all'),
+      error: new noflo.Port('object')
+    };
+    this.inPorts["in"].on('connect', (function(_this) {
+      return function() {
+        return _this.data = {};
+      };
+    })(this));
+    this.inPorts["in"].on('begingroup', (function(_this) {
+      return function(group) {
+        return _this.groups.push(group);
+      };
+    })(this));
+    this.inPorts["in"].on('data', (function(_this) {
+      return function(data) {
+        var d, g, idx, _i, _len, _ref;
+        if (!_this.groups.length) {
+          return;
+        }
+        d = _this.data;
+        _ref = _this.groups;
+        for (idx = _i = 0, _len = _ref.length; _i < _len; idx = ++_i) {
+          g = _ref[idx];
+          if (idx < _this.groups.length - 1) {
+            if (!d[g]) {
+              d[g] = {};
+            }
+            d = d[g];
+            continue;
+          }
+        }
+        if (!d[g]) {
+          d[g] = data;
+          return;
+        }
+        if (!Array.isArray(d[g])) {
+          d[g] = [d[g]];
+        }
+        return d[g].push(data);
+      };
+    })(this));
+    this.inPorts["in"].on('endgroup', (function(_this) {
+      return function() {
+        return _this.groups.pop();
+      };
+    })(this));
+    this.inPorts["in"].on('disconnect', (function(_this) {
+      return function() {
+        var err;
+        _this.groups = [];
+        if (Object.keys(_this.data).length) {
+          _this.outPorts.out.send(_this.data);
+          _this.outPorts.out.disconnect();
+          _this.data = null;
+          return;
+        }
+        _this.data = null;
+        err = new Error('No tree information was collected');
+        if (_this.outPorts.error.isAttached()) {
+          _this.outPorts.error.send(err);
+          _this.outPorts.error.disconnect();
+          return;
+        }
+        throw err;
+      };
+    })(this));
+  }
+
+  return CollectTree;
+
+})(noflo.Component);
+
+exports.getComponent = function() {
+  return new CollectTree;
 };
 
 });
@@ -35880,10 +35983,17 @@ WebSocketRuntime = (function(_super) {
     var console;
     console = document.createElement('pre');
     this.on('network', function(message) {
+      var encoded;
       if (message.command !== 'output') {
         return;
       }
-      console.innerHTML = "" + console.innerHTML + message.payload.message + "\n";
+      if (!message.payload.message) {
+        message.payload.message = '';
+      }
+      encoded = message.payload.message.replace(/[\u00A0-\u99999<>\&]/gim, function(i) {
+        return "&#" + (i.charCodeAt(0)) + ";";
+      });
+      console.innerHTML += "" + encoded + "\n";
       return console.scrollTop = console.scrollHeight;
     });
     this.on('disconnected', function() {
@@ -37163,6 +37273,7 @@ require.alias("noflo-noflo-groups/components/ReadGroup.js", "noflo-ui/deps/noflo
 require.alias("noflo-noflo-groups/components/SendByGroup.js", "noflo-ui/deps/noflo-groups/components/SendByGroup.js");
 require.alias("noflo-noflo-groups/components/CollectGroups.js", "noflo-ui/deps/noflo-groups/components/CollectGroups.js");
 require.alias("noflo-noflo-groups/components/CollectObject.js", "noflo-ui/deps/noflo-groups/components/CollectObject.js");
+require.alias("noflo-noflo-groups/components/CollectTree.js", "noflo-ui/deps/noflo-groups/components/CollectTree.js");
 require.alias("noflo-noflo-groups/components/FirstGroup.js", "noflo-ui/deps/noflo-groups/components/FirstGroup.js");
 require.alias("noflo-noflo-groups/components/MapGroup.js", "noflo-ui/deps/noflo-groups/components/MapGroup.js");
 require.alias("noflo-noflo-groups/components/MergeGroups.js", "noflo-ui/deps/noflo-groups/components/MergeGroups.js");
@@ -38634,21 +38745,18 @@ context.TheGraph.FONT_AWESOME = {
       this.getDOMNode().removeEventListener("track", this.onTrack);
       this.getDOMNode().removeEventListener("trackend", this.onTrackEnd);
     },
+    onPanScale: function () {
+      // Pass pan/scale out to the-graph
+      if (this.props.onPanScale) {
+        this.props.onPanScale(this.state.x, this.state.y, this.state.scale);
+      }
+    },
     showContext: function (options) {
       this.setState({
         contextMenu: options,
         tooltipVisible: false
       });
     },
-    // showNodeContext: function (event) {
-    //   this.setState({
-    //     contextElement: event.detail.element,
-    //     contextType: event.detail.type,
-    //     contextX: event.detail.x,
-    //     contextY: event.detail.y,
-    //     tooltipVisible: false
-    //   });
-    // },
     hideContext: function (event) {
       this.setState({
         contextMenu: null
@@ -38737,7 +38845,7 @@ context.TheGraph.FONT_AWESOME = {
       }.bind(this), 500);
     },
     keyDown: function (event) {
-      // HACK shiftKey global for taps https://github.com/Polymer/PointerGestures/issues/29
+      // HACK metaKey global for taps https://github.com/Polymer/PointerGestures/issues/29
       if (event.metaKey || event.ctrlKey) { 
         TheGraph.metaKeyPressed = true; 
       }
@@ -38745,9 +38853,12 @@ context.TheGraph.FONT_AWESOME = {
     keyUp: function (event) {
       // Escape
       if (event.keyCode===27) {
+        if (!this.refs.graph) {
+          return;
+        }
         this.refs.graph.cancelPreviewEdge();
       }
-      // HACK shiftKey global for taps https://github.com/Polymer/PointerGestures/issues/29
+      // HACK metaKey global for taps https://github.com/Polymer/PointerGestures/issues/29
       if (TheGraph.metaKeyPressed) { 
         TheGraph.metaKeyPressed = false; 
       }
@@ -38760,8 +38871,11 @@ context.TheGraph.FONT_AWESOME = {
     renderGraph: function () {
       this.refs.graph.markDirty();
     },
-    componentDidUpdate: function () {
+    componentDidUpdate: function (prevProps, prevState) {
       this.renderCanvas(this.bgContext);
+      if (!prevState || prevState.x!==this.state.x || prevState.y!==this.state.y || prevState.scale!==this.state.scale) {
+        this.onPanScale();
+      }
     },
     renderCanvas: function (c) {
       // Comment this line to go plaid
@@ -38888,7 +39002,8 @@ context.TheGraph.FONT_AWESOME = {
   });
 
 
-})(this);;
+})(this);
+;
 (function (context) {
   "use strict";
 
@@ -39158,6 +39273,11 @@ context.TheGraph.FONT_AWESOME = {
       });
       this.markDirty();
     },
+    updatedIcons: {},
+    updateIcon: function (nodeId, icon) {
+      this.updatedIcons[nodeId] = icon;
+      this.markDirty();
+    },
     dirty: false,
     libraryDirty: false,
     markDirty: function (event) {
@@ -39174,11 +39294,20 @@ context.TheGraph.FONT_AWESOME = {
         return;
       }
       this.dirty = true;
-      this.setState({});
+      this.forceUpdate();
     },
     shouldComponentUpdate: function () {
       // If ports change or nodes move, then edges need to rerender, so we do the whole graph
       return this.dirty;
+    },
+    componentDidUpdate: function () {
+      // HACK to change SVG class https://github.com/facebook/react/issues/1139
+      var d = this.getDOMNode();
+      var c = "graph";
+      if (this.state.selectedNodes.length > 0 || this.state.selectedEdges.length > 0) {
+        c += " selection";
+      }
+      d.setAttribute("class", c);
     },
     render: function() {
       this.dirty = false;
@@ -39205,7 +39334,12 @@ context.TheGraph.FONT_AWESOME = {
           node.metadata.label = key;
         }
         var componentInfo = self.getComponentInfo(node.component);
-        var icon = (componentInfo && componentInfo.icon ? componentInfo.icon : "cog");
+        var icon = "cog";
+        if (self.updatedIcons[key]) {
+          icon = self.updatedIcons[key];
+        } else if (componentInfo && componentInfo.icon) {
+          icon = componentInfo.icon;
+        }
         return TheGraph.Node({
           key: key,
           x: node.metadata.x,
@@ -39515,8 +39649,7 @@ context.TheGraph.FONT_AWESOME = {
 
       return React.DOM.g(
         {
-          className: "graph"//,
-          // onMouseDown: this.onMouseDown
+          // className: "graph" // See componentDidUpdate
         },
         React.DOM.g({
           className: "groups",
@@ -39557,7 +39690,6 @@ context.TheGraph.FONT_AWESOME = {
   window.PointerGestures.dispatcher.recognizers.hold.HOLD_DELAY = 500;
   window.PointerGestures.dispatcher.recognizers.track.WIGGLE_THRESHOLD = 8;
 
-
   // Node view
   TheGraph.Node = React.createClass({
     mixins: [
@@ -39577,6 +39709,7 @@ context.TheGraph.FONT_AWESOME = {
         this.getDOMNode().addEventListener("contextmenu", this.showContext);
         this.getDOMNode().addEventListener("hold", this.showContext);
       }
+
     },
     onNodeSelection: function (event) {
       // Don't tap app (unselect)
@@ -40928,6 +41061,7 @@ context.TheGraph.FONT_AWESOME = {
       menus: null,
       width: 800,
       height: 600,
+      scale: 1,
       appView: null,
       graphView: null,
       editable: true,
@@ -40939,6 +41073,8 @@ context.TheGraph.FONT_AWESOME = {
       selectedEdges: [],
       created: function () {
         this.library = {};
+        // Default pan
+        this.pan = [0,0];
       },
       ready: function () {
         this.themeChanged();
@@ -40946,7 +41082,10 @@ context.TheGraph.FONT_AWESOME = {
       themeChanged: function () {
         this.$.svgcontainer.className = "the-graph-"+this.theme;
       },
-      graphChanged: function () {
+      graphChanged: function (oldGraph, newGraph) {
+        if (oldGraph && oldGraph.removeListener) {
+          oldGraph.removeListener("endTransaction", this.fireChanged);
+        }
         // Listen for graph changes
         this.graph.on("endTransaction", this.fireChanged.bind(this));
 
@@ -40979,11 +41118,17 @@ context.TheGraph.FONT_AWESOME = {
             editable: this.editable,
             onEdgeSelection: this.onEdgeSelection.bind(this),
             onNodeSelection: this.onNodeSelection.bind(this),
+            onPanScale: this.onPanScale.bind(this),
             getMenuDef: this.getMenuDef
           }),
           this.$.svgcontainer
         );
         this.graphView = this.appView.refs.graph;
+      },
+      onPanScale: function (x, y, scale) {
+        this.pan[0] = x;
+        this.pan[1] = y;
+        this.scale = scale;
       },
       onEdgeSelection: function (itemKey, item, toggle) {
         if (itemKey === undefined) {
@@ -41149,6 +41294,10 @@ context.TheGraph.FONT_AWESOME = {
           height: this.height
         });
       },
+      updateIcon: function (nodeId, icon) {
+        if (!this.graphView) { return; }
+        this.graphView.updateIcon(nodeId, icon);
+      },
       rerender: function (options) {
         // This is throttled with rAF internally
         if (!this.graphView) { return; }
@@ -41163,6 +41312,14 @@ context.TheGraph.FONT_AWESOME = {
           return [0, 0]; 
         }
         return [this.appView.state.x, this.appView.state.y];
+      },
+      panChanged: function () {
+        // Send pan back to React
+        if (!this.appView) { return; }
+        this.appView.setState({
+          x: this.pan[0],
+          y: this.pan[1]
+        });
       },
       getScale: function () {
         if (!this.appView) { 
@@ -41255,6 +41412,421 @@ context.TheGraph.FONT_AWESOME = {
   (function () {
     "use strict";
 
+    Polymer('the-graph-thumb', {
+      graph: null,
+      width: 200,
+      height: 150,
+      thumbscale: 1,
+      nodeSize: 60,
+      fillStyle: "hsl(184, 8%, 75%)",
+      strokeStyle: "hsl(180, 11%, 70%)",
+      outsideFill: "hsla(0, 0%, 0%, 0.25)",
+      lineWidth: 0.75,
+      hide: false,
+      edgeColors: [
+        "white",
+        "hsl(  0, 100%, 46%)",
+        "hsl( 35, 100%, 46%)",
+        "hsl( 60, 100%, 46%)",
+        "hsl(135, 100%, 46%)",
+        "hsl(160, 100%, 46%)",
+        "hsl(185, 100%, 46%)",
+        "hsl(210, 100%, 46%)",
+        "hsl(285, 100%, 46%)",
+        "hsl(310, 100%, 46%)",
+        "hsl(335, 100%, 46%)"
+      ],
+      ready: function () {
+        this.thumbrectangle = [0,0,500,500];
+        this.viewrectangle = [0,0,200,150];
+      },
+      attached: function () {
+        this.style.width = this.width + "px";
+        this.style.height = this.height + "px";
+      },
+      drawEdge: function (context, scale, source, target, route) {
+        // Draw path
+        try {
+          context.strokeStyle = this.edgeColors[0];
+          if (route) {
+            // Color if route defined
+            context.strokeStyle = this.edgeColors[route];
+          }
+          var fromX = Math.round(source.metadata.x*scale)-0.5;
+          var fromY = Math.round(source.metadata.y*scale)-0.5;
+          var toX = Math.round(target.metadata.x*scale)-0.5;
+          var toY = Math.round(target.metadata.y*scale)-0.5;
+          context.beginPath();
+          context.moveTo(fromX, fromY);
+          context.lineTo(toX, toY);
+          context.stroke();
+        } catch (error) {
+        }
+      },
+      redrawGraph: function () {
+        if (!this.graph || !this.graph.edges.length) {
+          return;
+        }
+        var context = this.$.canvas.getContext("2d");
+        if (!context) { 
+          // ??? 
+          setTimeout( this.redrawGraph.bind(this), 500);
+          return; 
+        }
+        // Need the actual context, not polymer-wrapped one
+        context = unwrap(context);
+
+        // Reset origin
+        context.setTransform(1,0,0,1,0,0);
+        // Clear
+        context.clearRect(0, 0, this.width, this.height);
+        context.lineWidth = this.lineWidth;
+        // Find dimensions
+        var toDraw = [];
+        var minX = Infinity;
+        var minY = Infinity;
+        var maxX = -Infinity;
+        var maxY = -Infinity;
+        var nodes = {};
+
+        // Process nodes
+        this.graph.nodes.forEach(function(process){
+          if ( process.metadata && !isNaN(process.metadata.x) && !isNaN(process.metadata.y) ) {
+            toDraw.push(process);
+            nodes[process.id] = process;
+            minX = Math.min(minX, process.metadata.x);
+            minY = Math.min(minY, process.metadata.y);
+            maxX = Math.max(maxX, process.metadata.x);
+            maxY = Math.max(maxY, process.metadata.y);
+          }
+        }.bind(this));
+
+        // Process exported ports
+        if (this.graph.inports) {
+          Object.keys(this.graph.inports).forEach(function(key){
+            var exp = this.graph.inports[key];
+            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
+              toDraw.push(exp);
+              minX = Math.min(minX, exp.metadata.x);
+              minY = Math.min(minY, exp.metadata.y);
+              maxX = Math.max(maxX, exp.metadata.x);
+              maxY = Math.max(maxY, exp.metadata.y);
+            }
+          }.bind(this));
+        }
+        if (this.graph.outports) {
+          Object.keys(this.graph.outports).forEach(function(key){
+            var exp = this.graph.outports[key];
+            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
+              toDraw.push(exp);
+              minX = Math.min(minX, exp.metadata.x);
+              minY = Math.min(minY, exp.metadata.y);
+              maxX = Math.max(maxX, exp.metadata.x);
+              maxY = Math.max(maxY, exp.metadata.y);
+            }
+          }.bind(this));
+        }
+
+        // Sanity check graph size
+        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY) ) {
+          return;
+        }
+
+        minX -= this.nodeSize;
+        minY -= this.nodeSize;
+        maxX += this.nodeSize*2;
+        maxY += this.nodeSize*2;
+        var w = maxX - minX;
+        var h = maxY - minY;
+        // For the-graph-map to bind
+        this.thumbrectangle[0] = minX;
+        this.thumbrectangle[1] = minY;
+        this.thumbrectangle[2] = w;
+        this.thumbrectangle[3] = h;
+        // Scale dimensions
+        var scale = (w > h) ? this.width/w : this.height/h;
+        this.thumbscale = scale;
+        var size = Math.round(this.nodeSize * scale);
+        var sizeHalf = size / 2;
+        // Translate origin to match
+        context.setTransform(1,0,0,1,0-minX*scale,0-minY*scale);
+
+        // Draw connection from inports to nodes
+        if (this.graph.inports) {
+          Object.keys(this.graph.inports).forEach(function(key){
+            var exp = this.graph.inports[key];
+            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
+              var target = nodes[exp.process];
+              if (!target) {
+                return;
+              }
+              this.drawEdge(context, scale, exp, target, 2);
+            }
+          }.bind(this));
+        }
+        // Draw connection from nodes to outports
+        if (this.graph.outports) {
+          Object.keys(this.graph.outports).forEach(function(key){
+            var exp = this.graph.outports[key];
+            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
+              var source = nodes[exp.process];
+              if (!source) {
+                return;
+              }
+              this.drawEdge(context, scale, source, exp, 5);
+            }
+          }.bind(this));
+        }
+
+        // Draw edges
+        this.graph.edges.forEach(function (connection){
+          var source = nodes[connection.from.node];
+          var target = nodes[connection.to.node];
+          if (!source || !target) {
+            return;
+          }
+          this.drawEdge(context, scale, source, target, connection.metadata.route);
+        }.bind(this));
+
+        // Draw nodes
+        toDraw.forEach(function (node){
+          var x = Math.round(node.metadata.x * scale);
+          var y = Math.round(node.metadata.y * scale);
+
+          // Outer circle
+          context.strokeStyle = this.strokeStyle;
+          context.fillStyle = "#000000";
+          context.beginPath();
+          if (node.process && !node.component) {
+            context.arc(x, y, sizeHalf / 2, 0, 2*Math.PI, false);
+          } else {
+            context.arc(x, y, sizeHalf, 0, 2*Math.PI, false);
+          }
+          context.fill();
+          context.stroke();
+
+          // Inner circle
+          context.beginPath();
+          var smallRadius = Math.max(sizeHalf-1.5, 1);
+          if (node.process && !node.component) {
+            // Exported port
+            context.arc(x, y, smallRadius / 2, 0, 2*Math.PI, false);
+          } else {
+            // Regular node
+            context.arc(x, y, smallRadius, 0, 2*Math.PI, false);
+          }
+          context.fill();
+
+        }.bind(this));
+
+      },
+      // Grey out map outside of area
+      viewrectangleChanged: function () {
+        // [x, y, w, h]
+        var context = this.$.canvas2.getContext('2d');
+        context = unwrap(context);
+        // Clear
+        context.clearRect(0, 0, this.width, this.height);
+        // Mask outside view
+        context.fillStyle = this.outsideFill;
+        // Left
+        if (this.viewrectangle[0] > 0) {
+          context.fillRect(0, 0, this.viewrectangle[0], this.height);
+        }
+        // Top
+        if (this.viewrectangle[1] > 0) {
+          context.fillRect(this.viewrectangle[0], 0, this.viewrectangle[2], this.viewrectangle[1]);
+        }
+        // Bottom
+        var y = this.viewrectangle[1]+this.viewrectangle[3];
+        if (y < this.height) {
+          context.fillRect(this.viewrectangle[0], y, this.viewrectangle[2], this.height-y);
+        }
+        // Right
+        var x = this.viewrectangle[0]+this.viewrectangle[2];
+        if (x < this.width) {
+          context.fillRect(x, 0, this.width-x, this.height);
+        }
+      },
+      listener: null,
+      graphChanged: function (oldGraph, newGraph) {
+        if (!this.listener) {
+          this.listener = this.redrawGraph.bind(this);
+        }
+        if (oldGraph) {
+          oldGraph.removeListener('endTransaction', this.listener);
+        }
+        if (!this.graph) {
+          return;
+        }
+        this.graph.on('endTransaction', this.listener);
+        this.redrawGraph();
+      },
+      widthChanged: function () {
+        this.style.width = this.width + "px";
+        this.redrawGraph();
+      },
+      heightChanged: function () {
+        this.style.height = this.height + "px";
+        this.redrawGraph();
+      },
+      toDataURL: function () {
+        return this.$.canvas.toDataURL();
+      }
+    });
+
+  })();
+  ;
+
+  (function () {
+    "use strict";
+
+    Polymer('the-graph-map', {
+      width: 200,
+      height: 150,
+      hide: false,
+      ready: function () {
+        this.viewrectangle = [0,0,500,500];
+        this.scaledviewrectangle = [0,0,200,150];
+      },
+      attached: function () {
+        this.style.position = "relative";
+        this.style.overflow = "hidden";
+        this.style.cursor = "move";
+        this.style.width = this.width + "px";
+        this.style.height = this.height + "px";
+
+        // Pan graph by dragging map
+        this.addEventListener("track", function(event){
+          // Don't pan graph
+          event.stopPropagation();
+
+          var x = this.pan[0];
+          var y = this.pan[1];
+          x -= event.ddx / this.thumbscale;
+          y -= event.ddy / this.thumbscale;
+          this.pan = [Math.round(x), Math.round(y)];
+
+          event.preventTap();
+        }.bind(this));
+        this.addEventListener("trackend", function(event){
+          // Don't pan graph
+          event.stopPropagation();
+        }.bind(this));
+      },
+      viewrectangleChanged: function () {
+        var x = Math.round( (this.viewrectangle[0]/this.scale - this.thumbrectangle[0]) * this.thumbscale );
+        var y = Math.round( (this.viewrectangle[1]/this.scale - this.thumbrectangle[1]) * this.thumbscale );
+        var w = Math.round( this.viewrectangle[2] * this.thumbscale / this.scale );
+        var h = Math.round( this.viewrectangle[3] * this.thumbscale / this.scale );
+
+        if (x<0 && y<0 && w>this.width-x && h>this.height-y) {
+          // Hide map
+          this.hide = true;
+          return;
+        } else {
+          // Show map
+          this.hide = false;
+        }
+
+        // Clip to bounds
+        if (x < 0) { 
+          w += x; 
+          x = 0;
+          this.$.viewrect.style.borderLeftColor = "hsla(10, 60%, 32%, 0.3)";
+        } else {
+          this.$.viewrect.style.borderLeftColor = "hsla(190, 100%, 80%,.4)";
+        }
+        if (y < 0) { 
+          h += y; 
+          y = 0;
+          this.$.viewrect.style.borderTopColor = "hsla(10, 60%, 32%, 0.3)";
+        } else {
+          this.$.viewrect.style.borderTopColor = "hsla(190, 100%, 80%,.4)";
+        }
+        if (w > this.width-x) { 
+          w = this.width-x;
+          this.$.viewrect.style.borderRightColor = "hsla(10, 60%, 32%, 0.3)";
+        } else {
+          this.$.viewrect.style.borderRightColor = "hsla(190, 100%, 80%,.4)";
+        }
+        if (h > this.height-y) { 
+          h = this.height-y;
+          this.$.viewrect.style.borderBottomColor = "hsla(10, 60%, 32%, 0.3)";
+        } else {
+          this.$.viewrect.style.borderBottomColor = "hsla(190, 100%, 80%,.4)";
+        }
+
+        // Size and translate rect
+        this.$.viewrect.style.left = x+"px";
+        this.$.viewrect.style.top = y+"px";
+        this.$.viewrect.style.width = w+"px";
+        this.$.viewrect.style.height = h+"px";
+        this.scaledviewrectangle = [x, y, w, h];
+      },
+      hideChanged: function () {
+        if (this.hide) {
+          this.style.display = "none";
+        } else {
+          this.style.display = "block";
+        }
+      },
+      panChanged: function () {
+        var x = this.pan[0];
+        var y = this.pan[1];
+
+        this.viewrectangle[0] = -x;
+        this.viewrectangle[1] = -y;
+      },
+      thumbscaleChanged: function () {
+        this.viewrectangleChanged();
+      },
+      thumbrectangleChanged: function () {
+        // Binding this from the-graph-thumb to know the dimensions rendered
+        var w = this.thumbrectangle[2];
+        var h = this.thumbrectangle[3];
+        this.thumbscale = (w>h) ? this.width/w : this.height/h;
+      },
+      scaleChanged: function () {
+        this.viewrectangleChanged();
+      },
+      viewwidthChanged: function () {
+        this.viewrectangle[2] = parseInt(this.viewwidth, 10);
+      },
+      viewheightChanged: function () {
+        this.viewrectangle[3] = parseInt(this.viewheight, 10);
+      },
+      graphChanged: function () {
+      }
+    });
+
+  })();
+  ;
+
+  (function () {
+    "use strict";
+
+    Polymer('the-graph-nav', {
+      width: 250,
+      height: 150,
+      attached: function () {
+        this.style.width = this.width + "px";
+        this.style.height = this.height + "px";
+      },
+      widthChanged: function () {
+        this.style.width = this.width + "px";
+      },
+      heightChanged: function () {
+        this.style.height = this.height + "px";
+      }
+    });
+
+  })();
+  ;
+
+  (function () {
+    "use strict";
+
     Polymer('the-graph-editor', {
       graph: null,
       grid: 72,
@@ -41262,7 +41834,6 @@ context.TheGraph.FONT_AWESOME = {
       width: 800,
       height: 600,
       scale: 1,
-      pan: [0, 0],
       plugins: {},
       nofloGraph: null,
       menus: null,
@@ -41271,6 +41842,9 @@ context.TheGraph.FONT_AWESOME = {
       selectedNodes: [],
       selectedEdges: [],
       created: function () {
+        // Default pan
+        this.pan = [0,0];
+        // Default context menu defs
         this.menus = {
           edge: {
             icon: "long-arrow-right",
@@ -41371,7 +41945,9 @@ context.TheGraph.FONT_AWESOME = {
         };
       },
       ready: function () {},
-      attached: function () {},
+      attached: function () {
+        this.$.nav.addEventListener("tap", this.triggerFit.bind(this));
+      },
       detached: function () {
         for (var name in this.plugins) {
           this.plugins[name].unregister(this);
@@ -41515,6 +42091,9 @@ context.TheGraph.FONT_AWESOME = {
       },
       registerComponent: function (definition) {
         this.$.graph.registerComponent(definition);
+      },
+      updateIcon: function (nodeId, icon) {
+        this.$.graph.updateIcon(nodeId, icon);
       },
       rerender: function () {
         this.$.graph.rerender();
@@ -42426,6 +43005,7 @@ context.TheGraph.FONT_AWESOME = {
 
           // Emit new subgraph so that it can be stored
           graph.endTransaction('newsubgraph');
+          this.project.graphs.push(graph);
           this.fire('newgraph', graph);
 
           // End the transaction on the main graph
@@ -42444,240 +43024,6 @@ context.TheGraph.FONT_AWESOME = {
         }.bind(this));
       }
     });
-  ;
-
-  (function () {
-    "use strict";
-
-    Polymer('the-graph-thumb', {
-      graph: null,
-      thumbscale: 1,
-      nodeSize: 60,
-      fillStyle: "hsl(184, 8%, 75%)",
-      strokeStyle: "hsl(180, 11%, 32%)",
-      lineWidth: 0.75,
-      edgeColors: [
-        "white",
-        "hsl(  0, 100%, 60%)",
-        "hsl( 30, 100%, 60%)",
-        "hsl( 60, 100%, 60%)",
-        "hsl( 90, 100%, 60%)",
-        "hsl(120, 100%, 60%)",
-        "hsl(150, 100%, 60%)",
-        "hsl(180, 100%, 60%)",
-        "hsl(210, 100%, 60%)",
-        "hsl(240, 100%, 60%)",
-        "hsl(270, 100%, 60%)",
-        "hsl(300, 100%, 60%)",
-        "hsl(330, 100%, 60%)"
-      ],
-      ready: function () {
-        this.thumbrectangle = [0,0,500,500];
-      },
-      enteredView: function () {
-      },
-      drawEdge: function (context, scale, source, target, route) {
-        // Draw path
-        try {
-          context.strokeStyle = this.edgeColors[0];
-          if (route) {
-            // Color if route defined
-            context.strokeStyle = this.edgeColors[route];
-          }
-          var fromX = Math.round(source.metadata.x*scale)-0.5;
-          var fromY = Math.round(source.metadata.y*scale)-0.5;
-          var toX = Math.round(target.metadata.x*scale)-0.5;
-          var toY = Math.round(target.metadata.y*scale)-0.5;
-          context.beginPath();
-          context.moveTo(fromX, fromY);
-          context.lineTo(toX, toY);
-          context.stroke();
-        } catch (error) {
-        }
-      },
-      redrawGraph: function () {
-        if (!this.graph || !this.graph.edges.length) {
-          return;
-        }
-        var context = this.$.canvas.getContext("2d");
-        if (!context) { 
-          // ??? 
-          setTimeout( this.redrawGraph.bind(this), 500);
-          return; 
-        }
-
-        // Need the actual context, not polymer-wrapped one
-        context = unwrap(context);
-
-        // Reset origin
-        context.setTransform(1,0,0,1,0,0);
-        // Clear
-        context.clearRect(0, 0, this.width, this.height);
-        context.lineWidth = this.lineWidth;
-        // Find dimensions
-        var toDraw = [];
-        var minX = Infinity;
-        var minY = Infinity;
-        var maxX = -Infinity;
-        var maxY = -Infinity;
-        var nodes = {};
-
-        // Process nodes
-        this.graph.nodes.forEach(function(process){
-          if ( process.metadata && !isNaN(process.metadata.x) && !isNaN(process.metadata.y) ) {
-            toDraw.push(process);
-            nodes[process.id] = process;
-            minX = Math.min(minX, process.metadata.x);
-            minY = Math.min(minY, process.metadata.y);
-            maxX = Math.max(maxX, process.metadata.x);
-            maxY = Math.max(maxY, process.metadata.y);
-          }
-        }.bind(this));
-
-        // Process exported ports
-        if (this.graph.inports) {
-          Object.keys(this.graph.inports).forEach(function(key){
-            var exp = this.graph.inports[key];
-            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
-              toDraw.push(exp);
-              minX = Math.min(minX, exp.metadata.x);
-              minY = Math.min(minY, exp.metadata.y);
-              maxX = Math.max(maxX, exp.metadata.x);
-              maxY = Math.max(maxY, exp.metadata.y);
-            }
-          }.bind(this));
-        }
-        if (this.graph.outports) {
-          Object.keys(this.graph.outports).forEach(function(key){
-            var exp = this.graph.outports[key];
-            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
-              toDraw.push(exp);
-              minX = Math.min(minX, exp.metadata.x);
-              minY = Math.min(minY, exp.metadata.y);
-              maxX = Math.max(maxX, exp.metadata.x);
-              maxY = Math.max(maxY, exp.metadata.y);
-            }
-          }.bind(this));
-        }
-
-        // Sanity check graph size
-        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY) ) {
-          return;
-        }
-
-        minX -= this.nodeSize;
-        minY -= this.nodeSize;
-        maxX += this.nodeSize*2;
-        maxY += this.nodeSize*2;
-        var w = maxX - minX;
-        var h = maxY - minY;
-        // For the-graph-map to bind
-        this.thumbrectangle[0] = minX;
-        this.thumbrectangle[1] = minY;
-        this.thumbrectangle[2] = w;
-        this.thumbrectangle[3] = h;
-        // Scale dimensions
-        var scale = (w > h) ? this.width/w : this.height/h;
-        this.thumbscale = scale;
-        var size = Math.round(this.nodeSize * scale);
-        var sizeHalf = size / 2;
-        // Translate origin to match
-        context.setTransform(1,0,0,1,0-minX*scale,0-minY*scale);
-
-        // Draw connection from inports to nodes
-        if (this.graph.inports) {
-          Object.keys(this.graph.inports).forEach(function(key){
-            var exp = this.graph.inports[key];
-            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
-              var target = nodes[exp.process];
-              if (!target) {
-                return;
-              }
-              this.drawEdge(context, scale, exp, target);
-            }
-          }.bind(this));
-        }
-        // Draw connection from nodes to outports
-        if (this.graph.outports) {
-          Object.keys(this.graph.outports).forEach(function(key){
-            var exp = this.graph.outports[key];
-            if ( exp.metadata && !isNaN(exp.metadata.x) && !isNaN(exp.metadata.y) ) {
-              var source = nodes[exp.process];
-              if (!source) {
-                return;
-              }
-              this.drawEdge(context, scale, source, exp);
-            }
-          }.bind(this));
-        }
-
-        // Draw edges
-        this.graph.edges.forEach(function (connection){
-          var source = nodes[connection.from.node];
-          var target = nodes[connection.to.node];
-          if (!source || !target) {
-            return;
-          }
-          this.drawEdge(context, scale, source, target, connection.metadata.route);
-        }.bind(this));
-
-        // Draw nodes
-        toDraw.forEach(function (node){
-          var x = Math.round(node.metadata.x * scale);
-          var y = Math.round(node.metadata.y * scale);
-
-          // Outer circle
-          context.strokeStyle = this.strokeStyle;
-          context.fillStyle = "#000000";
-          context.beginPath();
-          if (node.process && !node.component) {
-            context.arc(x, y, sizeHalf / 2, 0, 2*Math.PI, false);
-          } else {
-            context.arc(x, y, sizeHalf, 0, 2*Math.PI, false);
-          }
-          context.fill();
-          context.stroke();
-
-          // Inner circle
-          context.beginPath();
-          var smallRadius = Math.max(sizeHalf-1.5, 1);
-          if (node.process && !node.component) {
-            // Exported port
-            context.arc(x, y, smallRadius / 2, 0, 2*Math.PI, false);
-          } else {
-            // Regular node
-            context.arc(x, y, smallRadius, 0, 2*Math.PI, false);
-          }
-          context.fill();
-
-        }.bind(this));
-      },
-      listener: null,
-      graphChanged: function (oldGraph) {
-        if (!this.listener) {
-          this.listener = this.redrawGraph.bind(this);
-        }
-        if (oldGraph) {
-          oldGraph.removeListener('endTransaction', this.listener);
-        }
-        if (!this.graph) {
-          return;
-        }
-        this.graph.on('endTransaction', this.listener);
-        this.redrawGraph();
-      },
-      widthChanged: function () {
-        this.redrawGraph();
-      },
-      heightChanged: function () {
-        this.redrawGraph();
-      },
-      toDataURL: function () {
-        return this.$.canvas.toDataURL();
-      }
-    });
-
-  })();
   ;
 
     Polymer('noflo-account-settings', {

@@ -4148,6 +4148,9 @@ InternalSocket = (function(_super) {
   };
 
   InternalSocket.prototype.endGroup = function() {
+    if (!this.groups.length) {
+      return;
+    }
     return this.emit('endgroup', this.groups.pop());
   };
 
@@ -6107,9 +6110,10 @@ Network = (function(_super) {
     if (!node.component.isReady()) {
       node.component.once('ready', (function(_this) {
         return function() {
-          _this.subscribeSubgraph(node);
+          return _this.subscribeSubgraph(node);
         };
       })(this));
+      return;
     }
     if (!node.component.network) {
       return;
@@ -6126,9 +6130,9 @@ Network = (function(_super) {
           data = {};
         }
         if (data.subgraph) {
-          data.subgraph = "" + node.id + ":" + data.subgraph;
+          data.subgraph = data.subgraph.unshift(node.id);
         } else {
-          data.subgraph = node.id;
+          data.subgraph = [node.id];
         }
         return _this.emit(type, data);
       };
@@ -10761,7 +10765,7 @@ require.register("noflo-noflo-groups/index.js", function(exports, require, modul
 
 });
 require.register("noflo-noflo-groups/component.json", function(exports, require, module){
-module.exports = JSON.parse('{"name":"noflo-groups","description":"Group Utilities for NoFlo","keywords":["noflo","groups","utilities"],"author":"Kenneth Kan <kenhkan@gmail.com>","version":"0.1.0","repo":"kenhkan/groups","dependencies":{"component/underscore":"*","noflo/noflo":"*"},"scripts":["components/ReadGroups.coffee","components/RemoveGroups.coffee","components/Regroup.coffee","components/Group.coffee","components/GroupZip.coffee","components/FilterByGroup.coffee","components/Objectify.coffee","components/ReadGroup.coffee","components/SendByGroup.coffee","components/CollectGroups.coffee","components/CollectObject.coffee","components/FirstGroup.coffee","components/MapGroup.coffee","components/MergeGroups.coffee","components/GroupByObjectKey.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"tags","components":{"ReadGroups":"components/ReadGroups.coffee","RemoveGroups":"components/RemoveGroups.coffee","Regroup":"components/Regroup.coffee","Group":"components/Group.coffee","GroupZip":"components/GroupZip.coffee","FilterByGroup":"components/FilterByGroup.coffee","Objectify":"components/Objectify.coffee","ReadGroup":"components/ReadGroup.coffee","SendByGroup":"components/SendByGroup.coffee","CollectGroups":"components/CollectGroups.coffee","CollectObject":"components/CollectObject.coffee","FirstGroup":"components/FirstGroup.coffee","MapGroup":"components/MapGroup.coffee","MergeGroups":"components/MergeGroups.coffee","GroupByObjectKey":"components/GroupByObjectKey.coffee"}}}');
+module.exports = JSON.parse('{"name":"noflo-groups","description":"Group Utilities for NoFlo","keywords":["noflo","groups","utilities"],"author":"Kenneth Kan <kenhkan@gmail.com>","version":"0.1.0","repo":"kenhkan/groups","dependencies":{"component/underscore":"*","noflo/noflo":"*"},"scripts":["components/ReadGroups.coffee","components/RemoveGroups.coffee","components/Regroup.coffee","components/Group.coffee","components/GroupZip.coffee","components/FilterByGroup.coffee","components/Objectify.coffee","components/ReadGroup.coffee","components/SendByGroup.coffee","components/CollectGroups.coffee","components/CollectObject.coffee","components/CollectTree.coffee","components/FirstGroup.coffee","components/MapGroup.coffee","components/MergeGroups.coffee","components/GroupByObjectKey.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"tags","components":{"ReadGroups":"components/ReadGroups.coffee","RemoveGroups":"components/RemoveGroups.coffee","Regroup":"components/Regroup.coffee","Group":"components/Group.coffee","GroupZip":"components/GroupZip.coffee","FilterByGroup":"components/FilterByGroup.coffee","Objectify":"components/Objectify.coffee","ReadGroup":"components/ReadGroup.coffee","SendByGroup":"components/SendByGroup.coffee","CollectGroups":"components/CollectGroups.coffee","CollectObject":"components/CollectObject.coffee","CollectTree":"components/CollectTree.coffee","FirstGroup":"components/FirstGroup.coffee","MapGroup":"components/MapGroup.coffee","MergeGroups":"components/MergeGroups.coffee","GroupByObjectKey":"components/GroupByObjectKey.coffee"}}}');
 });
 require.register("noflo-noflo-groups/components/ReadGroups.js", function(exports, require, module){
 var ReadGroups, noflo, _,
@@ -11000,14 +11004,17 @@ noflo = require("noflo");
 Group = (function(_super) {
   __extends(Group, _super);
 
+  Group.prototype.description = 'Add groups to a packet';
+
   function Group() {
     this.newGroups = [];
     this.inPorts = {
-      "in": new noflo.Port,
-      group: new noflo.Port
+      "in": new noflo.Port('all'),
+      group: new noflo.Port('string'),
+      clear: new noflo.Port('bang')
     };
     this.outPorts = {
-      out: new noflo.Port
+      out: new noflo.Port('all')
     };
     this.inPorts["in"].on("connect", (function(_this) {
       return function() {
@@ -11720,6 +11727,102 @@ CollectObject = (function(_super) {
 
 exports.getComponent = function() {
   return new CollectObject;
+};
+
+});
+require.register("noflo-noflo-groups/components/CollectTree.js", function(exports, require, module){
+var CollectTree, noflo,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+noflo = require('noflo');
+
+CollectTree = (function(_super) {
+  __extends(CollectTree, _super);
+
+  CollectTree.prototype.description = 'Collect grouped packets into a simple tree structure and send on disconnect';
+
+  function CollectTree() {
+    this.data = null;
+    this.groups = [];
+    this.inPorts = {
+      "in": new noflo.Port('all')
+    };
+    this.outPorts = {
+      out: new noflo.Port('all'),
+      error: new noflo.Port('object')
+    };
+    this.inPorts["in"].on('connect', (function(_this) {
+      return function() {
+        return _this.data = {};
+      };
+    })(this));
+    this.inPorts["in"].on('begingroup', (function(_this) {
+      return function(group) {
+        return _this.groups.push(group);
+      };
+    })(this));
+    this.inPorts["in"].on('data', (function(_this) {
+      return function(data) {
+        var d, g, idx, _i, _len, _ref;
+        if (!_this.groups.length) {
+          return;
+        }
+        d = _this.data;
+        _ref = _this.groups;
+        for (idx = _i = 0, _len = _ref.length; _i < _len; idx = ++_i) {
+          g = _ref[idx];
+          if (idx < _this.groups.length - 1) {
+            if (!d[g]) {
+              d[g] = {};
+            }
+            d = d[g];
+            continue;
+          }
+        }
+        if (!d[g]) {
+          d[g] = data;
+          return;
+        }
+        if (!Array.isArray(d[g])) {
+          d[g] = [d[g]];
+        }
+        return d[g].push(data);
+      };
+    })(this));
+    this.inPorts["in"].on('endgroup', (function(_this) {
+      return function() {
+        return _this.groups.pop();
+      };
+    })(this));
+    this.inPorts["in"].on('disconnect', (function(_this) {
+      return function() {
+        var err;
+        _this.groups = [];
+        if (Object.keys(_this.data).length) {
+          _this.outPorts.out.send(_this.data);
+          _this.outPorts.out.disconnect();
+          _this.data = null;
+          return;
+        }
+        _this.data = null;
+        err = new Error('No tree information was collected');
+        if (_this.outPorts.error.isAttached()) {
+          _this.outPorts.error.send(err);
+          _this.outPorts.error.disconnect();
+          return;
+        }
+        throw err;
+      };
+    })(this));
+  }
+
+  return CollectTree;
+
+})(noflo.Component);
+
+exports.getComponent = function() {
+  return new CollectTree;
 };
 
 });
@@ -16422,7 +16525,7 @@ require.register("noflo-noflo-packets/index.js", function(exports, require, modu
 
 });
 require.register("noflo-noflo-packets/component.json", function(exports, require, module){
-module.exports = JSON.parse('{"name":"noflo-packets","description":"The best project ever.","version":"0.0.8","author":"Kenneth Kan <kenhkan@gmail.com>","repo":"kenhkan/packets","keywords":[],"dependencies":{"noflo/noflo":"*","component/underscore":"*"},"scripts":["components/CountPackets.coffee","components/Unzip.coffee","components/Defaults.coffee","components/DoNotDisconnect.coffee","components/OnlyDisconnect.coffee","components/SplitPacket.coffee","components/Range.coffee","components/Flatten.coffee","components/Compact.coffee","components/Zip.coffee","components/SendWith.coffee","components/FilterPackets.coffee","components/FilterByValue.coffee","components/FilterByPosition.coffee","components/FilterPacket.coffee","components/UniquePacket.coffee","components/GroupByPacket.coffee","components/LastPacket.coffee","components/Counter.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"dropbox","components":{"CountPackets":"components/CountPackets.coffee","Unzip":"components/Unzip.coffee","Defaults":"components/Defaults.coffee","DoNotDisconnect":"components/DoNotDisconnect.coffee","OnlyDisconnect":"components/OnlyDisconnect.coffee","SplitPacket":"components/SplitPacket.coffee","Range":"components/Range.coffee","Flatten":"components/Flatten.coffee","Compact":"components/Compact.coffee","Zip":"components/Zip.coffee","SendWith":"components/SendWith.coffee","FilterPackets":"components/FilterPackets.coffee","FilterByValue":"components/FilterByValue.coffee","FilterByPosition":"components/FilterByPosition.coffee","FilterPacket":"components/FilterPacket.coffee","UniquePacket":"components/UniquePacket.coffee","GroupByPacket":"components/GroupByPacket.coffee","LastPacket":"components/LastPacket.coffee","Counter":"components/Counter.coffee"}}}');
+module.exports = JSON.parse('{"name":"noflo-packets","description":"The best project ever.","version":"0.0.8","author":"Kenneth Kan <kenhkan@gmail.com>","repo":"kenhkan/packets","keywords":[],"dependencies":{"noflo/noflo":"*","component/underscore":"*"},"scripts":["components/CountPackets.coffee","components/Unzip.coffee","components/Defaults.coffee","components/DoNotDisconnect.coffee","components/DisconnectAfter.coffee","components/OnlyDisconnect.coffee","components/SplitPacket.coffee","components/Range.coffee","components/Flatten.coffee","components/Compact.coffee","components/Zip.coffee","components/SendWith.coffee","components/FilterPackets.coffee","components/FilterByValue.coffee","components/FilterByPosition.coffee","components/FilterPacket.coffee","components/UniquePacket.coffee","components/GroupByPacket.coffee","components/LastPacket.coffee","components/Counter.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"dropbox","components":{"CountPackets":"components/CountPackets.coffee","Unzip":"components/Unzip.coffee","Defaults":"components/Defaults.coffee","DoNotDisconnect":"components/DoNotDisconnect.coffee","DisconnectAfter":"components/DisconnectAfter.coffee","OnlyDisconnect":"components/OnlyDisconnect.coffee","SplitPacket":"components/SplitPacket.coffee","Range":"components/Range.coffee","Flatten":"components/Flatten.coffee","Compact":"components/Compact.coffee","Zip":"components/Zip.coffee","SendWith":"components/SendWith.coffee","FilterPackets":"components/FilterPackets.coffee","FilterByValue":"components/FilterByValue.coffee","FilterByPosition":"components/FilterByPosition.coffee","FilterPacket":"components/FilterPacket.coffee","UniquePacket":"components/UniquePacket.coffee","GroupByPacket":"components/GroupByPacket.coffee","LastPacket":"components/LastPacket.coffee","Counter":"components/Counter.coffee"}}}');
 });
 require.register("noflo-noflo-packets/components/CountPackets.js", function(exports, require, module){
 var CountPackets, noflo, _,
@@ -16681,6 +16784,85 @@ DoNotDisconnect = (function(_super) {
 
 exports.getComponent = function() {
   return new DoNotDisconnect;
+};
+
+});
+require.register("noflo-noflo-packets/components/DisconnectAfter.js", function(exports, require, module){
+var DisconnectAfter, noflo,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+noflo = require('noflo');
+
+DisconnectAfter = (function(_super) {
+  __extends(DisconnectAfter, _super);
+
+  DisconnectAfter.prototype.description = 'Pass a disconnect through after a certain number of packets has been passed';
+
+  function DisconnectAfter() {
+    this.count = 0;
+    this.number = 1;
+    this.allowDisconnect = false;
+    this.inPorts = {
+      "in": new noflo.Port('all'),
+      packets: new noflo.Port('int')
+    };
+    this.outPorts = {
+      out: new noflo.Port('out'),
+      count: new noflo.Port('int')
+    };
+    this.inPorts["in"].on('begingroup', (function(_this) {
+      return function(group) {
+        return _this.outPorts.out.beginGroup(group);
+      };
+    })(this));
+    this.inPorts["in"].on('data', (function(_this) {
+      return function(data) {
+        _this.outPorts.out.send(data);
+        _this.count++;
+        if (_this.count >= _this.number) {
+          _this.allowDisconnect = true;
+        }
+        if (!_this.outPorts.count.isAttached()) {
+          return;
+        }
+        _this.outPorts.count.beginGroup(_this.number);
+        _this.outPorts.count.send(_this.count);
+        return _this.outPorts.count.endGroup();
+      };
+    })(this));
+    this.inPorts["in"].on('endgroup', (function(_this) {
+      return function() {
+        return _this.outPorts.out.endGroup();
+      };
+    })(this));
+    this.inPorts["in"].on('disconnect', (function(_this) {
+      return function() {
+        if (!_this.allowDisconnect) {
+          return;
+        }
+        _this.outPorts.out.disconnect();
+        if (_this.outPorts.count.isAttached()) {
+          _this.outPorts.count.disconnect();
+        }
+        _this.count = 0;
+        return _this.allowDisconnect = false;
+      };
+    })(this));
+    this.inPorts.packets.on('data', (function(_this) {
+      return function(number) {
+        _this.number = number;
+        return _this.count = 0;
+      };
+    })(this));
+  }
+
+  return DisconnectAfter;
+
+})(noflo.Component);
+
+exports.getComponent = function() {
+  return new DisconnectAfter;
 };
 
 });
@@ -18031,19 +18213,26 @@ RegexpRouter = (function(_super) {
 
   function RegexpRouter() {
     this.routes = [];
+    this.sendToplevel = false;
     this.inPorts = {
-      "in": new noflo.Port,
-      route: new noflo.ArrayPort,
-      reset: new noflo.Port
+      "in": new noflo.Port('all'),
+      route: new noflo.ArrayPort('string'),
+      reset: new noflo.Port('bang'),
+      sendtoplevel: new noflo.Port('boolean')
     };
     this.outPorts = {
-      out: new noflo.ArrayPort,
-      missed: new noflo.Port,
-      route: new noflo.Port
+      out: new noflo.ArrayPort('all'),
+      missed: new noflo.Port('all'),
+      route: new noflo.Port('string')
     };
     this.inPorts.reset.on("disconnect", (function(_this) {
       return function() {
         return _this.routes = [];
+      };
+    })(this));
+    this.inPorts.sendtoplevel.on('data', (function(_this) {
+      return function(data) {
+        return _this.sendTopLevel = String(data) === 'true';
       };
     })(this));
     this.inPorts.route.on("data", (function(_this) {
@@ -18086,6 +18275,13 @@ RegexpRouter = (function(_super) {
         } else if (_this.outPorts.missed.isAttached()) {
           _this.outPorts.missed.beginGroup(group);
         }
+        if (_this.sendTopLevel && _this.level === 0) {
+          if ((_this.matchedRouteIndex != null) && _this.outPorts.out.isAttached(_this.matchedRouteIndex)) {
+            _this.outPorts.out.beginGroup(group, _this.matchedRouteIndex);
+          } else {
+            _this.outPorts.missed.beginGroup(group);
+          }
+        }
         return _this.level++;
       };
     })(this));
@@ -18102,7 +18298,15 @@ RegexpRouter = (function(_super) {
       return function(group) {
         _this.level--;
         if (_this.level === 0 && (_this.matchedRouteIndex != null)) {
+          if (_this.sendTopLevel) {
+            if ((_this.matchedRouteIndex != null) && _this.outPorts.out.isAttached(_this.matchedRouteIndex)) {
+              _this.outPorts.out.endGroup(_this.matchedRouteIndex);
+            } else if (_this.outPorts.missed.isAttached()) {
+              _this.outPorts.missed.endGroup();
+            }
+          }
           _this.matchedRouteIndex = null;
+          return;
         }
         if ((_this.matchedRouteIndex != null) && _this.outPorts.out.isAttached(_this.matchedRouteIndex)) {
           return _this.outPorts.out.endGroup(_this.matchedRouteIndex);
@@ -49991,6 +50195,7 @@ require.alias("noflo-noflo-groups/components/ReadGroup.js", "noflo-noflo-gesture
 require.alias("noflo-noflo-groups/components/SendByGroup.js", "noflo-noflo-gestures/deps/noflo-groups/components/SendByGroup.js");
 require.alias("noflo-noflo-groups/components/CollectGroups.js", "noflo-noflo-gestures/deps/noflo-groups/components/CollectGroups.js");
 require.alias("noflo-noflo-groups/components/CollectObject.js", "noflo-noflo-gestures/deps/noflo-groups/components/CollectObject.js");
+require.alias("noflo-noflo-groups/components/CollectTree.js", "noflo-noflo-gestures/deps/noflo-groups/components/CollectTree.js");
 require.alias("noflo-noflo-groups/components/FirstGroup.js", "noflo-noflo-gestures/deps/noflo-groups/components/FirstGroup.js");
 require.alias("noflo-noflo-groups/components/MapGroup.js", "noflo-noflo-gestures/deps/noflo-groups/components/MapGroup.js");
 require.alias("noflo-noflo-groups/components/MergeGroups.js", "noflo-noflo-gestures/deps/noflo-groups/components/MergeGroups.js");
@@ -50031,6 +50236,7 @@ require.alias("noflo-noflo-packets/components/CountPackets.js", "noflo-noflo-ges
 require.alias("noflo-noflo-packets/components/Unzip.js", "noflo-noflo-gestures/deps/noflo-packets/components/Unzip.js");
 require.alias("noflo-noflo-packets/components/Defaults.js", "noflo-noflo-gestures/deps/noflo-packets/components/Defaults.js");
 require.alias("noflo-noflo-packets/components/DoNotDisconnect.js", "noflo-noflo-gestures/deps/noflo-packets/components/DoNotDisconnect.js");
+require.alias("noflo-noflo-packets/components/DisconnectAfter.js", "noflo-noflo-gestures/deps/noflo-packets/components/DisconnectAfter.js");
 require.alias("noflo-noflo-packets/components/OnlyDisconnect.js", "noflo-noflo-gestures/deps/noflo-packets/components/OnlyDisconnect.js");
 require.alias("noflo-noflo-packets/components/SplitPacket.js", "noflo-noflo-gestures/deps/noflo-packets/components/SplitPacket.js");
 require.alias("noflo-noflo-packets/components/Range.js", "noflo-noflo-gestures/deps/noflo-packets/components/Range.js");
@@ -50275,6 +50481,7 @@ require.alias("noflo-noflo-groups/components/ReadGroup.js", "noflo-ui-preview/de
 require.alias("noflo-noflo-groups/components/SendByGroup.js", "noflo-ui-preview/deps/noflo-groups/components/SendByGroup.js");
 require.alias("noflo-noflo-groups/components/CollectGroups.js", "noflo-ui-preview/deps/noflo-groups/components/CollectGroups.js");
 require.alias("noflo-noflo-groups/components/CollectObject.js", "noflo-ui-preview/deps/noflo-groups/components/CollectObject.js");
+require.alias("noflo-noflo-groups/components/CollectTree.js", "noflo-ui-preview/deps/noflo-groups/components/CollectTree.js");
 require.alias("noflo-noflo-groups/components/FirstGroup.js", "noflo-ui-preview/deps/noflo-groups/components/FirstGroup.js");
 require.alias("noflo-noflo-groups/components/MapGroup.js", "noflo-ui-preview/deps/noflo-groups/components/MapGroup.js");
 require.alias("noflo-noflo-groups/components/MergeGroups.js", "noflo-ui-preview/deps/noflo-groups/components/MergeGroups.js");
@@ -50498,6 +50705,7 @@ require.alias("noflo-noflo-packets/components/CountPackets.js", "noflo-ui-previe
 require.alias("noflo-noflo-packets/components/Unzip.js", "noflo-ui-preview/deps/noflo-packets/components/Unzip.js");
 require.alias("noflo-noflo-packets/components/Defaults.js", "noflo-ui-preview/deps/noflo-packets/components/Defaults.js");
 require.alias("noflo-noflo-packets/components/DoNotDisconnect.js", "noflo-ui-preview/deps/noflo-packets/components/DoNotDisconnect.js");
+require.alias("noflo-noflo-packets/components/DisconnectAfter.js", "noflo-ui-preview/deps/noflo-packets/components/DisconnectAfter.js");
 require.alias("noflo-noflo-packets/components/OnlyDisconnect.js", "noflo-ui-preview/deps/noflo-packets/components/OnlyDisconnect.js");
 require.alias("noflo-noflo-packets/components/SplitPacket.js", "noflo-ui-preview/deps/noflo-packets/components/SplitPacket.js");
 require.alias("noflo-noflo-packets/components/Range.js", "noflo-ui-preview/deps/noflo-packets/components/Range.js");
