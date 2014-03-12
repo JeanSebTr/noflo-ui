@@ -5459,19 +5459,31 @@ exports.LoggingComponent = (function(_super) {
 
 });
 require.register("noflo-noflo/src/lib/ComponentLoader.js", function(exports, require, module){
-var ComponentLoader, internalSocket, nofloGraph;
+var ComponentLoader, EventEmitter, internalSocket, nofloGraph,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 internalSocket = require('./InternalSocket');
 
 nofloGraph = require('./Graph');
 
-ComponentLoader = (function() {
+if (!require('./Platform').isBrowser()) {
+  EventEmitter = require('events').EventEmitter;
+} else {
+  EventEmitter = require('emitter');
+}
+
+ComponentLoader = (function(_super) {
+  __extends(ComponentLoader, _super);
+
   function ComponentLoader(baseDir) {
     this.baseDir = baseDir;
     this.components = null;
     this.checked = [];
     this.revalidate = false;
     this.libraryIcons = {};
+    this.processing = false;
+    this.ready = false;
   }
 
   ComponentLoader.prototype.getModulePrefix = function(name) {
@@ -5523,6 +5535,9 @@ ComponentLoader = (function() {
         if (cPath.indexOf('.coffee') !== -1) {
           cPath = cPath.replace('.coffee', '.js');
         }
+        if (cPath.substr(0, 2) === './') {
+          cPath = cPath.substr(2);
+        }
         this.registerComponent(prefix, name, "/" + moduleName + "/" + cPath);
       }
     }
@@ -5538,19 +5553,38 @@ ComponentLoader = (function() {
   };
 
   ComponentLoader.prototype.listComponents = function(callback) {
-    if (this.components !== null) {
+    if (this.processing) {
+      this.once('ready', (function(_this) {
+        return function() {
+          return callback(_this.components);
+        };
+      })(this));
+      return;
+    }
+    if (this.components) {
       return callback(this.components);
     }
-    this.components = {};
-    this.getModuleComponents(this.baseDir);
-    return callback(this.components);
+    this.ready = false;
+    this.processing = true;
+    return setTimeout((function(_this) {
+      return function() {
+        _this.components = {};
+        _this.getModuleComponents(_this.baseDir);
+        _this.processing = false;
+        _this.ready = true;
+        _this.emit('ready', true);
+        if (callback) {
+          return callback(_this.components);
+        }
+      };
+    })(this), 1);
   };
 
   ComponentLoader.prototype.load = function(name, callback, delayed, metadata) {
     var component, componentName, implementation, instance;
-    if (!this.components) {
+    if (!this.ready) {
       this.listComponents((function(_this) {
-        return function(components) {
+        return function() {
           return _this.load(name, callback, delayed, metadata);
         };
       })(this));
@@ -5663,13 +5697,19 @@ ComponentLoader = (function() {
     return null;
   };
 
-  ComponentLoader.prototype.registerComponent = function(packageId, name, cPath, callback) {
+  ComponentLoader.prototype.normalizeName = function(packageId, name) {
     var fullName, prefix;
     prefix = this.getModulePrefix(packageId);
     fullName = "" + prefix + "/" + name;
     if (!packageId) {
       fullName = name;
     }
+    return fullName;
+  };
+
+  ComponentLoader.prototype.registerComponent = function(packageId, name, cPath, callback) {
+    var fullName;
+    fullName = this.normalizeName(packageId, name);
     this.components[fullName] = cPath;
     if (callback) {
       return callback();
@@ -5680,15 +5720,98 @@ ComponentLoader = (function() {
     return this.registerComponent(packageId, name, gPath, callback);
   };
 
+  ComponentLoader.prototype.setSource = function(packageId, name, source, language, callback) {
+    var e, implementation;
+    if (!this.ready) {
+      this.listComponents((function(_this) {
+        return function() {
+          return _this.setSource(packageId, name, source, language, callback);
+        };
+      })(this));
+      return;
+    }
+    if (language === 'coffeescript') {
+      if (!window.CoffeeScript) {
+        return callback(new Error('CoffeeScript compiler not available'));
+      }
+      try {
+        source = CoffeeScript.compile(source, {
+          bare: true
+        });
+      } catch (_error) {
+        e = _error;
+        return callback(e);
+      }
+    }
+    try {
+      source = source.replace("require('noflo')", "require('./NoFlo')");
+      source = source.replace('require("noflo")', 'require("./NoFlo")');
+      implementation = eval("(function () { var exports = {}; " + source + "; return exports; })()");
+    } catch (_error) {
+      e = _error;
+      return callback(e);
+    }
+    if (!(implementation || implementation.getComponent)) {
+      return callback(new Error('Provided source failed to create a runnable component'));
+    }
+    return this.registerComponent(packageId, name, implementation, function() {
+      return callback(null);
+    });
+  };
+
+  ComponentLoader.prototype.getSource = function(name, callback) {
+    var component, componentName, nameParts, path;
+    if (!this.ready) {
+      this.listComponents((function(_this) {
+        return function() {
+          return _this.getSource(packageId, name, callback);
+        };
+      })(this));
+      return;
+    }
+    component = this.components[name];
+    if (!component) {
+      for (componentName in this.components) {
+        if (componentName.split('/')[1] === name) {
+          component = this.components[componentName];
+          name = componentName;
+          break;
+        }
+      }
+      if (!component) {
+        return callback(new Error("Component " + name + " not installed"));
+      }
+    }
+    if (typeof component !== 'string') {
+      return callback(new Error("Can't provide source for " + name + ". Not a file"));
+    }
+    path = window.require.resolve(component);
+    if (!path) {
+      return callback(new Error("Component " + name + " is not resolvable to a path"));
+    }
+    nameParts = name.split('/');
+    if (nameParts.length === 1) {
+      nameParts[1] = nameParts[0];
+      nameParts[0] = '';
+    }
+    return callback(null, {
+      name: nameParts[1],
+      library: nameParts[0],
+      code: window.require.modules[path].toString()
+    });
+  };
+
   ComponentLoader.prototype.clear = function() {
     this.components = null;
     this.checked = [];
-    return this.revalidate = true;
+    this.revalidate = true;
+    this.ready = false;
+    return this.processing = false;
   };
 
   return ComponentLoader;
 
-})();
+})(EventEmitter);
 
 exports.ComponentLoader = ComponentLoader;
 
@@ -6130,6 +6253,9 @@ Network = (function(_super) {
           data = {};
         }
         if (data.subgraph) {
+          if (!data.subgraph.unshift) {
+            data.subgraph = [data.subgraph];
+          }
           data.subgraph = data.subgraph.unshift(node.id);
         } else {
           data.subgraph = [node.id];
@@ -7837,43 +7963,32 @@ ComponentProtocol = (function() {
     })(this));
   };
 
-  ComponentProtocol.prototype.getSource = function(payload, context) {};
+  ComponentProtocol.prototype.getSource = function(payload, context) {
+    var baseDir, loader;
+    baseDir = this.transport.options.baseDir;
+    loader = this.getLoader(baseDir);
+    return loader.getSource(payload.name, (function(_this) {
+      return function(err, component) {
+        if (err) {
+          _this.send('error', err, context);
+          return;
+        }
+        return _this.send('source', component, context);
+      };
+    })(this));
+  };
 
   ComponentProtocol.prototype.setSource = function(payload, context) {
-    var e, fullName, implementation, library, source;
-    source = payload.code;
-    if (payload.language === 'coffeescript') {
-      if (!window.CoffeeScript) {
-        return;
-      }
-      try {
-        source = CoffeeScript.compile(payload.code, {
-          bare: true
-        });
-      } catch (_error) {
-        e = _error;
-        this.send('error', new Error("" + payload.name + " L" + e.location.first_line + ", C" + e.location.first_column + ": " + e.message), context);
-        return;
-      }
-    }
-    implementation = eval("(function () { var exports = {}; " + source + "; return exports; })()");
-    if (!(implementation || implementation.getComponent)) {
-      this.send('error', new Error("" + payload.name + ": No component implementation available"), context);
-      return;
-    }
-    library = payload.library ? payload.library : '';
-    fullName = payload.name;
-    if (library) {
-      fullName = "" + library + "/" + fullName;
-    }
-    return Object.keys(this.loaders).forEach((function(_this) {
-      return function(baseDir) {
-        var loader;
-        loader = _this.getLoader(baseDir);
-        return loader.listComponents(function(components) {
-          loader.registerComponent(library, payload.name, implementation);
-          return _this.processComponent(loader, fullName, context);
-        });
+    var baseDir, loader;
+    baseDir = this.transport.options.baseDir;
+    loader = this.getLoader(baseDir);
+    return loader.setSource(payload.library, payload.name, payload.code, payload.language, (function(_this) {
+      return function(err) {
+        if (err) {
+          _this.send('error', err, context);
+          return;
+        }
+        return _this.processComponent(loader, loader.normalizeName(payload.library, payload.name), context);
       };
     })(this));
   };
@@ -18981,7 +19096,7 @@ Connect = (function(_super) {
 
   function Connect() {
     this.handleError = __bind(this.handleError, this);
-    this.protocol = 'noflo';
+    this.protocol = '';
     this.inPorts = {
       url: new noflo.Port('string'),
       protocol: new noflo.Port('string')
@@ -22310,7 +22425,7 @@ exports.getComponent = function() {
 };
 
 });
-require.register("bergie-FD.js/fd.js", function(exports, require, module){
+require.register("srikumarks-FD.js/fd.js", function(exports, require, module){
 // Copyright (c) 2011, Srikumar K. S. (srikumarks@gmail.com)
 // License: New BSD (http://www.opensource.org/licenses/bsd-license.php)
 //
@@ -24300,7 +24415,7 @@ require.register("noflo-noflo-finitedomain/index.js", function(exports, require,
 
 });
 require.register("noflo-noflo-finitedomain/component.json", function(exports, require, module){
-module.exports = JSON.parse('{"name":"noflo-finitedomain","description":"Finite Domain Constraint Solver","author":"Henri Bergius <henri.bergius@iki.fi>","repo":"noflo/noflo-finitedomain","version":"0.1.0","keywords":[],"dependencies":{"noflo/noflo":"*","bergie/FD.js":"*"},"scripts":["components/CreateSpace.coffee","components/DeclareVariable.coffee","components/GreaterThan.coffee","components/Solve.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"puzzle-piece","components":{"CreateSpace":"components/CreateSpace.coffee","DeclareVariable":"components/DeclareVariable.coffee","GreaterThan":"components/GreaterThan.coffee","Solve":"components/Solve.coffee"}}}');
+module.exports = JSON.parse('{"name":"noflo-finitedomain","description":"Finite Domain Constraint Solver","author":"Henri Bergius <henri.bergius@iki.fi>","repo":"noflo/noflo-finitedomain","version":"0.1.0","keywords":[],"dependencies":{"noflo/noflo":"*","srikumarks/FD.js":"*"},"scripts":["components/CreateSpace.coffee","components/DeclareVariable.coffee","components/GreaterThan.coffee","components/Solve.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"puzzle-piece","components":{"CreateSpace":"components/CreateSpace.coffee","DeclareVariable":"components/DeclareVariable.coffee","GreaterThan":"components/GreaterThan.coffee","Solve":"components/Solve.coffee"}}}');
 });
 require.register("noflo-noflo-finitedomain/components/CreateSpace.js", function(exports, require, module){
 var CreateSpace, FD, noflo,
@@ -51030,9 +51145,9 @@ require.alias("noflo-fbp/lib/fbp.js", "noflo-noflo/deps/fbp/lib/fbp.js");
 require.alias("noflo-fbp/lib/fbp.js", "noflo-noflo/deps/fbp/index.js");
 require.alias("noflo-fbp/lib/fbp.js", "noflo-fbp/index.js");
 require.alias("noflo-noflo/src/lib/NoFlo.js", "noflo-noflo/index.js");
-require.alias("bergie-FD.js/fd.js", "noflo-noflo-finitedomain/deps/fdjs/fd.js");
-require.alias("bergie-FD.js/fd.js", "noflo-noflo-finitedomain/deps/fdjs/index.js");
-require.alias("bergie-FD.js/fd.js", "bergie-FD.js/index.js");
+require.alias("srikumarks-FD.js/fd.js", "noflo-noflo-finitedomain/deps/fdjs/fd.js");
+require.alias("srikumarks-FD.js/fd.js", "noflo-noflo-finitedomain/deps/fdjs/index.js");
+require.alias("srikumarks-FD.js/fd.js", "srikumarks-FD.js/index.js");
 require.alias("d4tocchini-noflo-draggabilly/index.js", "noflo-ui-preview/deps/noflo-draggabilly/index.js");
 require.alias("d4tocchini-noflo-draggabilly/component.json", "noflo-ui-preview/deps/noflo-draggabilly/component.json");
 require.alias("d4tocchini-noflo-draggabilly/components/Draggabilly.js", "noflo-ui-preview/deps/noflo-draggabilly/components/Draggabilly.js");
