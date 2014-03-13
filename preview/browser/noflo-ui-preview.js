@@ -7458,6 +7458,7 @@ require.register("noflo-noflo-runtime-base/src/Base.js", function(exports, requi
 var BaseTransport, protocols;
 
 protocols = {
+  Runtime: require('./protocol/Runtime'),
   Graph: require('./protocol/Graph'),
   Network: require('./protocol/Network'),
   Component: require('./protocol/Component')
@@ -7469,6 +7470,8 @@ BaseTransport = (function() {
     if (!this.options) {
       this.options = {};
     }
+    this.version = '0.4';
+    this.runtime = new protocols.Runtime(this);
     this.graph = new protocols.Graph(this);
     this.network = new protocols.Network(this);
     this.component = new protocols.Component(this);
@@ -7480,6 +7483,8 @@ BaseTransport = (function() {
   BaseTransport.prototype.receive = function(protocol, topic, payload, context) {
     this.context = context;
     switch (protocol) {
+      case 'runtime':
+        return this.runtime.receive(topic, payload, context);
       case 'graph':
         return this.graph.receive(topic, payload, context);
       case 'network':
@@ -8078,6 +8083,57 @@ ComponentProtocol = (function() {
 })();
 
 module.exports = ComponentProtocol;
+
+});
+require.register("noflo-noflo-runtime-base/src/protocol/Runtime.js", function(exports, require, module){
+var RuntimeProtocol, noflo;
+
+noflo = require('noflo');
+
+RuntimeProtocol = (function() {
+  function RuntimeProtocol(transport) {
+    this.transport = transport;
+  }
+
+  RuntimeProtocol.prototype.send = function(topic, payload, context) {
+    return this.transport.send('runtime', topic, payload, context);
+  };
+
+  RuntimeProtocol.prototype.receive = function(topic, payload, context) {
+    switch (topic) {
+      case 'getruntime':
+        return this.getRuntime(payload, context);
+      case 'packet':
+        return this.receivePacket(payload, context);
+    }
+  };
+
+  RuntimeProtocol.prototype.getRuntime = function(payload, context) {
+    var type;
+    type = this.transport.type;
+    if (!type) {
+      if (noflo.isBrowser()) {
+        type = 'noflo-browser';
+      } else {
+        type = 'noflo-nodejs';
+      }
+    }
+    return this.send('runtime', {
+      type: type,
+      version: this.transport.version,
+      capabilities: ['protocol:graph', 'protocol:component', 'protocol:network', 'component:setsource', 'component:getsource']
+    }, context);
+  };
+
+  RuntimeProtocol.prototype.receivePacket = function(payload, context) {
+    return this.send('error', new Error('Packets not supported yet'), context);
+  };
+
+  return RuntimeProtocol;
+
+})();
+
+module.exports = RuntimeProtocol;
 
 });
 require.register("noflo-noflo-runtime-iframe/index.js", function(exports, require, module){
@@ -49737,9 +49793,207 @@ exports.getComponent = function() {
 };
 
 });
-require.register("noflo-ui-preview/component.json", function(exports, require, module){
-module.exports = JSON.parse('{"name":"noflo-ui-preview","description":"NoFlo runtime environment for client-side previews","author":"Henri Bergius <henri.bergius@iki.fi>","repo":"noflo/noflo-ui","keywords":[],"dependencies":{"noflo/noflo":"*","noflo/noflo-runtime-iframe":"*","noflo/noflo-ajax":"*","noflo/noflo-core":"*","noflo/noflo-css":"*","noflo/noflo-dom":"*","noflo/noflo-flow":"*","noflo/noflo-gestures":"*","noflo/noflo-groups":"*","noflo/noflo-interaction":"*","noflo/noflo-localstorage":"*","noflo/noflo-math":"*","noflo/noflo-objects":"*","noflo/noflo-packets":"*","noflo/noflo-physics":"*","noflo/noflo-routers":"*","noflo/noflo-strings":"*","noflo/noflo-websocket":"*","noflo/noflo-indexeddb":"*","noflo/noflo-github":"*","noflo/noflo-finitedomain":"*","d4tocchini/noflo-draggabilly":"*","forresto/noflo-gum":"*","forresto/noflo-seriously":"*","jonnor/noflo-cad":"*"},"json":["component.json"],"files":["iframe.html"]}');
+require.register("alfa256-noflo-prompts/index.js", function(exports, require, module){
+
 });
+require.register("alfa256-noflo-prompts/component.json", function(exports, require, module){
+module.exports = JSON.parse('{"name":"noflo-prompts","description":"Prompt Utilities for NoFlo","author":"Alfredo Consebola <sistemas.alfredo@gmail.com>","repo":"noflo-prompts","version":"0.0.1","keywords":[],"dependencies":{"noflo/noflo":"*"},"scripts":["components/Alert.coffee","components/Confirm.coffee","components/Prompt.coffee","index.js"],"json":["component.json"],"noflo":{"icon":"bug","components":{"Alert":"components/Alert.coffee","Confirm":"components/Confirm.coffee","Prompt":"components/Prompt.coffee"}}}');
+});
+require.register("alfa256-noflo-prompts/components/Alert.js", function(exports, require, module){
+var Alert, noflo,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+noflo = require('noflo');
+
+Alert = (function(_super) {
+  __extends(Alert, _super);
+
+  Alert.prototype.icon = 'exclamation';
+
+  function Alert() {
+    this.inPorts = {
+      "in": new noflo.Port('string')
+    };
+    this.outPorts = {
+      out: new noflo.Port('string')
+    };
+    this.inPorts["in"].on('data', (function(_this) {
+      return function(data) {
+        if (data !== void 0) {
+          if (noflo.isBrowser()) {
+            alert(data);
+          } else {
+            console.log("Alert: " + data);
+          }
+          _this.outPorts.out.send(true);
+          return _this.outPorts.out.disconnect();
+        }
+      };
+    })(this));
+  }
+
+  return Alert;
+
+})(noflo.Component);
+
+exports.getComponent = function() {
+  return new Alert;
+};
+
+});
+require.register("alfa256-noflo-prompts/components/Confirm.js", function(exports, require, module){
+var Confirm, noflo,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+noflo = require('noflo');
+
+Confirm = (function(_super) {
+  __extends(Confirm, _super);
+
+  Confirm.prototype.icon = 'check';
+
+  function Confirm() {
+    this.inPorts = {
+      "in": new noflo.Port('string')
+    };
+    this.outPorts = {
+      out: new noflo.Port('bool')
+    };
+    this.inPorts["in"].on('data', (function(_this) {
+      return function(data) {
+        if (data !== void 0) {
+          _this.outPorts.out.send(confirm(data));
+          return _this.outPorts.out.disconnect();
+        }
+      };
+    })(this));
+  }
+
+  return Confirm;
+
+})(noflo.Component);
+
+exports.getComponent = function() {
+  return new Confirm;
+};
+
+});
+require.register("alfa256-noflo-prompts/components/Prompt.js", function(exports, require, module){
+var Prompt, noflo,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+noflo = require('noflo');
+
+Prompt = (function(_super) {
+  __extends(Prompt, _super);
+
+  Prompt.prototype.icon = 'pencil';
+
+  function Prompt() {
+    this.inPorts = {
+      "in": new noflo.Port('string')
+    };
+    this.outPorts = {
+      out: new noflo.Port('bool')
+    };
+    this.inPorts["in"].on('data', (function(_this) {
+      return function(data) {
+        if (data !== void 0) {
+          _this.outPorts.out.send(prompt(data));
+          return _this.outPorts.out.disconnect();
+        }
+      };
+    })(this));
+  }
+
+  return Prompt;
+
+})(noflo.Component);
+
+exports.getComponent = function() {
+  return new Prompt;
+};
+
+});
+require.register("noflo-noflo-image/index.js", function(exports, require, module){
+/*
+ * This file can be used for general library features of noflo-image.
+ *
+ * The library features can be made available as CommonJS modules that the
+ * components in this project utilize.
+ */
+
+});
+require.register("noflo-noflo-image/component.json", function(exports, require, module){
+module.exports = JSON.parse('{"name":"noflo-image","description":"Image processing utilities for NoFlo, browser and Node.js.","author":"Forrest Oliphant","repo":"noflo/noflo-image","version":"0.0.1","keywords":[],"dependencies":{"noflo/noflo":"*"},"scripts":["components/Measure.coffee","index.js"],"json":["component.json"],"noflo":{"components":{"Measure":"components/Measure.coffee"}}}');
+});
+require.register("noflo-noflo-image/components/Measure.js", function(exports, require, module){
+var Measure, noflo,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+noflo = require('noflo');
+
+Measure = (function(_super) {
+  __extends(Measure, _super);
+
+  Measure.prototype.description = 'Load image from URL and get dimensions';
+
+  Measure.prototype.icon = 'picture-o';
+
+  function Measure() {
+    this.inPorts = {
+      url: new noflo.Port('string')
+    };
+    this.outPorts = {
+      dimensions: new noflo.Port('array'),
+      error: new noflo.Port('object')
+    };
+    Measure.__super__.constructor.call(this, 'url', 'dimensions');
+  }
+
+  Measure.prototype.doAsync = function(url, callback) {
+    var image;
+    image = new Image();
+    image.onload = (function(_this) {
+      return function() {
+        var dimensions;
+        if (((image.naturalWidth != null) && image.naturalWidth === 0) || image.width === 0) {
+          image.onerror(new Error("" + url + " didn't come back as a valid image."));
+          return;
+        }
+        dimensions = [image.width, image.height];
+        _this.outPorts.dimensions.beginGroup(url);
+        _this.outPorts.dimensions.send(dimensions);
+        _this.outPorts.dimensions.endGroup();
+        _this.outPorts.dimensions.disconnect();
+        return callback(null);
+      };
+    })(this);
+    image.onerror = function(err) {
+      err.url = url;
+      return callback(err);
+    };
+    return image.src = url;
+  };
+
+  return Measure;
+
+})(noflo.AsyncComponent);
+
+exports.getComponent = function() {
+  return new Measure;
+};
+
+});
+require.register("noflo-ui-preview/component.json", function(exports, require, module){
+module.exports = JSON.parse('{"name":"noflo-ui-preview","description":"NoFlo runtime environment for client-side previews","author":"Henri Bergius <henri.bergius@iki.fi>","repo":"noflo/noflo-ui","keywords":[],"dependencies":{"noflo/noflo":"*","noflo/noflo-runtime-iframe":"*","noflo/noflo-ajax":"*","noflo/noflo-core":"*","noflo/noflo-css":"*","noflo/noflo-dom":"*","noflo/noflo-flow":"*","noflo/noflo-gestures":"*","noflo/noflo-groups":"*","noflo/noflo-interaction":"*","noflo/noflo-localstorage":"*","noflo/noflo-math":"*","noflo/noflo-objects":"*","noflo/noflo-packets":"*","noflo/noflo-physics":"*","noflo/noflo-routers":"*","noflo/noflo-strings":"*","noflo/noflo-websocket":"*","noflo/noflo-indexeddb":"*","noflo/noflo-github":"*","noflo/noflo-finitedomain":"*","d4tocchini/noflo-draggabilly":"*","forresto/noflo-gum":"*","forresto/noflo-seriously":"*","jonnor/noflo-cad":"*","alfa256/noflo-prompts":"*","noflo/noflo-image":"*"},"json":["component.json"],"files":["iframe.html"]}');
+});
+
+
 
 
 
@@ -49831,6 +50085,7 @@ require.alias("noflo-noflo-runtime-base/src/Base.js", "noflo-noflo-runtime-ifram
 require.alias("noflo-noflo-runtime-base/src/protocol/Graph.js", "noflo-noflo-runtime-iframe/deps/noflo-runtime-base/src/protocol/Graph.js");
 require.alias("noflo-noflo-runtime-base/src/protocol/Network.js", "noflo-noflo-runtime-iframe/deps/noflo-runtime-base/src/protocol/Network.js");
 require.alias("noflo-noflo-runtime-base/src/protocol/Component.js", "noflo-noflo-runtime-iframe/deps/noflo-runtime-base/src/protocol/Component.js");
+require.alias("noflo-noflo-runtime-base/src/protocol/Runtime.js", "noflo-noflo-runtime-iframe/deps/noflo-runtime-base/src/protocol/Runtime.js");
 require.alias("noflo-noflo-runtime-base/src/Base.js", "noflo-noflo-runtime-iframe/deps/noflo-runtime-base/index.js");
 require.alias("noflo-noflo/component.json", "noflo-noflo-runtime-base/deps/noflo/component.json");
 require.alias("noflo-noflo/src/lib/Graph.js", "noflo-noflo-runtime-base/deps/noflo/src/lib/Graph.js");
@@ -51366,3 +51621,69 @@ require.alias("components-underscore/underscore.js", "jonnor-OpenJSCADorg/deps/u
 require.alias("components-underscore/underscore.js", "jonnor-OpenJSCADorg/deps/underscore/index.js");
 require.alias("components-underscore/underscore.js", "components-underscore/index.js");
 require.alias("jonnor-OpenJSCADorg/openjscad.js", "jonnor-OpenJSCADorg/index.js");
+require.alias("alfa256-noflo-prompts/index.js", "noflo-ui-preview/deps/noflo-prompts/index.js");
+require.alias("alfa256-noflo-prompts/component.json", "noflo-ui-preview/deps/noflo-prompts/component.json");
+require.alias("alfa256-noflo-prompts/components/Alert.js", "noflo-ui-preview/deps/noflo-prompts/components/Alert.js");
+require.alias("alfa256-noflo-prompts/components/Confirm.js", "noflo-ui-preview/deps/noflo-prompts/components/Confirm.js");
+require.alias("alfa256-noflo-prompts/components/Prompt.js", "noflo-ui-preview/deps/noflo-prompts/components/Prompt.js");
+require.alias("alfa256-noflo-prompts/index.js", "noflo-prompts/index.js");
+require.alias("noflo-noflo/component.json", "alfa256-noflo-prompts/deps/noflo/component.json");
+require.alias("noflo-noflo/src/lib/Graph.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Graph.js");
+require.alias("noflo-noflo/src/lib/InternalSocket.js", "alfa256-noflo-prompts/deps/noflo/src/lib/InternalSocket.js");
+require.alias("noflo-noflo/src/lib/BasePort.js", "alfa256-noflo-prompts/deps/noflo/src/lib/BasePort.js");
+require.alias("noflo-noflo/src/lib/InPort.js", "alfa256-noflo-prompts/deps/noflo/src/lib/InPort.js");
+require.alias("noflo-noflo/src/lib/OutPort.js", "alfa256-noflo-prompts/deps/noflo/src/lib/OutPort.js");
+require.alias("noflo-noflo/src/lib/Ports.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Ports.js");
+require.alias("noflo-noflo/src/lib/Port.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Port.js");
+require.alias("noflo-noflo/src/lib/ArrayPort.js", "alfa256-noflo-prompts/deps/noflo/src/lib/ArrayPort.js");
+require.alias("noflo-noflo/src/lib/Component.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Component.js");
+require.alias("noflo-noflo/src/lib/AsyncComponent.js", "alfa256-noflo-prompts/deps/noflo/src/lib/AsyncComponent.js");
+require.alias("noflo-noflo/src/lib/LoggingComponent.js", "alfa256-noflo-prompts/deps/noflo/src/lib/LoggingComponent.js");
+require.alias("noflo-noflo/src/lib/ComponentLoader.js", "alfa256-noflo-prompts/deps/noflo/src/lib/ComponentLoader.js");
+require.alias("noflo-noflo/src/lib/NoFlo.js", "alfa256-noflo-prompts/deps/noflo/src/lib/NoFlo.js");
+require.alias("noflo-noflo/src/lib/Network.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Network.js");
+require.alias("noflo-noflo/src/lib/Platform.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Platform.js");
+require.alias("noflo-noflo/src/lib/Journal.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Journal.js");
+require.alias("noflo-noflo/src/lib/Utils.js", "alfa256-noflo-prompts/deps/noflo/src/lib/Utils.js");
+require.alias("noflo-noflo/src/components/Graph.js", "alfa256-noflo-prompts/deps/noflo/src/components/Graph.js");
+require.alias("noflo-noflo/src/lib/NoFlo.js", "alfa256-noflo-prompts/deps/noflo/index.js");
+require.alias("component-emitter/index.js", "noflo-noflo/deps/emitter/index.js");
+
+require.alias("component-underscore/index.js", "noflo-noflo/deps/underscore/index.js");
+
+require.alias("noflo-fbp/lib/fbp.js", "noflo-noflo/deps/fbp/lib/fbp.js");
+require.alias("noflo-fbp/lib/fbp.js", "noflo-noflo/deps/fbp/index.js");
+require.alias("noflo-fbp/lib/fbp.js", "noflo-fbp/index.js");
+require.alias("noflo-noflo/src/lib/NoFlo.js", "noflo-noflo/index.js");
+require.alias("noflo-noflo-image/index.js", "noflo-ui-preview/deps/noflo-image/index.js");
+require.alias("noflo-noflo-image/component.json", "noflo-ui-preview/deps/noflo-image/component.json");
+require.alias("noflo-noflo-image/components/Measure.js", "noflo-ui-preview/deps/noflo-image/components/Measure.js");
+require.alias("noflo-noflo-image/index.js", "noflo-image/index.js");
+require.alias("noflo-noflo/component.json", "noflo-noflo-image/deps/noflo/component.json");
+require.alias("noflo-noflo/src/lib/Graph.js", "noflo-noflo-image/deps/noflo/src/lib/Graph.js");
+require.alias("noflo-noflo/src/lib/InternalSocket.js", "noflo-noflo-image/deps/noflo/src/lib/InternalSocket.js");
+require.alias("noflo-noflo/src/lib/BasePort.js", "noflo-noflo-image/deps/noflo/src/lib/BasePort.js");
+require.alias("noflo-noflo/src/lib/InPort.js", "noflo-noflo-image/deps/noflo/src/lib/InPort.js");
+require.alias("noflo-noflo/src/lib/OutPort.js", "noflo-noflo-image/deps/noflo/src/lib/OutPort.js");
+require.alias("noflo-noflo/src/lib/Ports.js", "noflo-noflo-image/deps/noflo/src/lib/Ports.js");
+require.alias("noflo-noflo/src/lib/Port.js", "noflo-noflo-image/deps/noflo/src/lib/Port.js");
+require.alias("noflo-noflo/src/lib/ArrayPort.js", "noflo-noflo-image/deps/noflo/src/lib/ArrayPort.js");
+require.alias("noflo-noflo/src/lib/Component.js", "noflo-noflo-image/deps/noflo/src/lib/Component.js");
+require.alias("noflo-noflo/src/lib/AsyncComponent.js", "noflo-noflo-image/deps/noflo/src/lib/AsyncComponent.js");
+require.alias("noflo-noflo/src/lib/LoggingComponent.js", "noflo-noflo-image/deps/noflo/src/lib/LoggingComponent.js");
+require.alias("noflo-noflo/src/lib/ComponentLoader.js", "noflo-noflo-image/deps/noflo/src/lib/ComponentLoader.js");
+require.alias("noflo-noflo/src/lib/NoFlo.js", "noflo-noflo-image/deps/noflo/src/lib/NoFlo.js");
+require.alias("noflo-noflo/src/lib/Network.js", "noflo-noflo-image/deps/noflo/src/lib/Network.js");
+require.alias("noflo-noflo/src/lib/Platform.js", "noflo-noflo-image/deps/noflo/src/lib/Platform.js");
+require.alias("noflo-noflo/src/lib/Journal.js", "noflo-noflo-image/deps/noflo/src/lib/Journal.js");
+require.alias("noflo-noflo/src/lib/Utils.js", "noflo-noflo-image/deps/noflo/src/lib/Utils.js");
+require.alias("noflo-noflo/src/components/Graph.js", "noflo-noflo-image/deps/noflo/src/components/Graph.js");
+require.alias("noflo-noflo/src/lib/NoFlo.js", "noflo-noflo-image/deps/noflo/index.js");
+require.alias("component-emitter/index.js", "noflo-noflo/deps/emitter/index.js");
+
+require.alias("component-underscore/index.js", "noflo-noflo/deps/underscore/index.js");
+
+require.alias("noflo-fbp/lib/fbp.js", "noflo-noflo/deps/fbp/lib/fbp.js");
+require.alias("noflo-fbp/lib/fbp.js", "noflo-noflo/deps/fbp/index.js");
+require.alias("noflo-fbp/lib/fbp.js", "noflo-fbp/index.js");
+require.alias("noflo-noflo/src/lib/NoFlo.js", "noflo-noflo/index.js");

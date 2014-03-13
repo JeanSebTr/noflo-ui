@@ -35890,6 +35890,13 @@ BaseRuntime = (function(_super) {
 
   BaseRuntime.prototype.getElement = function() {};
 
+  BaseRuntime.prototype.recvRuntime = function(command, payload) {
+    return this.emit('runtime', {
+      command: command,
+      payload: payload
+    });
+  };
+
   BaseRuntime.prototype.recvComponent = function(command, payload) {
     switch (command) {
       case 'component':
@@ -35932,6 +35939,10 @@ BaseRuntime = (function(_super) {
           payload: payload
         });
     }
+  };
+
+  BaseRuntime.prototype.sendRuntime = function(command, payload) {
+    return this.send('runtime', command, payload);
   };
 
   BaseRuntime.prototype.sendGraph = function(command, payload) {
@@ -36034,7 +36045,8 @@ IframeRuntime = (function(_super) {
       online: true,
       label: 'connected'
     });
-    return this.emit('connected');
+    this.emit('connected');
+    return this.send('runtime', 'getruntime', null);
   };
 
   IframeRuntime.prototype.send = function(protocol, command, payload) {
@@ -36068,6 +36080,8 @@ IframeRuntime = (function(_super) {
 
   IframeRuntime.prototype.onMessage = function(message) {
     switch (message.data.protocol) {
+      case 'runtime':
+        return this.recvRuntime(message.data.command, message.data.payload);
       case 'graph':
         return this.recvGraph(message.data.command, message.data.payload);
       case 'network':
@@ -36141,6 +36155,7 @@ WebSocketRuntime = (function(_super) {
           label: 'connected'
         });
         _this.emit('connected');
+        _this.send('runtime', 'getruntime', null);
         return _this.flush();
       };
     })(this), false);
@@ -36195,6 +36210,8 @@ WebSocketRuntime = (function(_super) {
     var msg;
     msg = JSON.parse(message.data);
     switch (msg.protocol) {
+      case 'runtime':
+        return this.recvRuntime(msg.command, msg.payload);
       case 'graph':
         return this.recvGraph(msg.command, msg.payload);
       case 'network':
